@@ -35,9 +35,27 @@ int insert(hash_node * ht,int size,int val)
 {
 	int hv = hash_function(val,size);
 
-	if (ht[hv].hash_value )
+	hash_node * curr_node_p = &ht[hv];
+	int curr_dib = 0;
+	while (curr_node_p->hash_value < curr_dib && hv < size)
 	{
+		//find position of deleted element.Insert it directly.
+		if (curr_node_p->hash_value == -2 )
+		{
+			curr_node_p->hash_value = curr_dib;
+			curr_node_p->val = val;
+			break;
+		}
+		if (curr_node_p->hash_value == -1 )
+		{
+			curr_node_p->hash_value = curr_dib;
+			curr_node_p->val = val;
+			break;
+		}
+		curr_node_p = &ht[hv++];
+		curr_dib++;
 	}
+	
 
 	return hv;
 }
