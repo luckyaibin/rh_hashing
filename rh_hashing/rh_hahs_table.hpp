@@ -5,11 +5,27 @@
 
 #define USE_ROBIN_HOOD_HASH 1
 #define USE_SEPARATE_HASH_ARRAY 1
+#include<malloc.h>
 
+#include <functional>
+#include<utility>
+#include<stdio.h>
+using namespace std;
+
+typedef unsigned int uint32_t ;
+
+
+inline unsigned int hash_function(int v)
+{
+	v = v + (v << 5);
+	v = 255;
+	return v;
+}
 template<class Key, class Value>
 class hash_table
 {
-	static const int INITIAL_SIZE = 256;
+	
+	static const int INITIAL_SIZE = 16;
 	static const int LOAD_FACTOR_PERCENT = 90;
 
 	struct elem
@@ -17,33 +33,31 @@ class hash_table
 		Key key;
 		Value value;
 		elem(Key&& k, Value&& v) : key(std::move(k)), value(std::move(v)) {}
-#if !USE_SEPARATE_HASH_ARRAY
 		uint32_t hash;				
-#endif
 	};
 
 	elem* __restrict buffer;
-#if USE_SEPARATE_HASH_ARRAY
-	uint32_t* __restrict hashes;
-#endif
-
 	int num_elems;
 	int capacity;
 	int resize_threshold;
 	uint32_t mask;
 
+	
 	static uint32_t hash_key(const Key& key)
 	{				
-		const std::hash<Key> hasher;
-		auto h = static_cast<uint32_t>(hasher(key));
+		//const std::hash<Key> hasher;
+		//auto h = static_cast<uint32_t>(hasher(key));
 
-		// MSB is used to indicate a deleted elem, so
-		// clear it
-		h &= 0x7fffffff;
+		//// MSB is used to indicate a deleted elem, so
+		//// clear it
+		//h &= 0x7fffffff;
 
-		// Ensure that we never return 0 as a hash,
-		// since we use 0 to indicate that the elem has never
-		// been used at all.
+		//// Ensure that we never return 0 as a hash,
+		//// since we use 0 to indicate that the elem has never
+		//// been used at all.
+		//h |= h==0;
+
+		unsigned int h = hash_function(key);
 		h |= h==0;
 		return h; 
 	}
@@ -61,16 +75,15 @@ class hash_table
 
 	int probe_distance(uint32_t hash, uint32_t slot_index) const
 	{	
-		return (slot_index + capacity - desired_pos(hash)) & mask;
+		int desired_position = desired_pos(hash);
+		int prodist = (slot_index + capacity - desired_position);
+		prodist = prodist & mask;
+		return  prodist;
 	}
 
 	uint32_t& elem_hash(int ix)
 	{
-#if USE_SEPARATE_HASH_ARRAY
-		return hashes[ix];
-#else
-		return buffer[ix].hash;
-#endif
+	return buffer[ix].hash;
 	}
 
 	uint32_t elem_hash(int ix) const
@@ -82,10 +95,7 @@ class hash_table
 	void alloc()
 	{		
 		buffer = reinterpret_cast<elem*>(_aligned_malloc(capacity*sizeof(elem), __alignof(elem)));
-#if USE_SEPARATE_HASH_ARRAY
-		hashes = new uint32_t[capacity];
-#endif
-
+		memset(buffer,0,capacity*sizeof(elem));
 		// flag all elems as free
 		for( int i = 0; i < capacity; ++i)
 		{
@@ -100,9 +110,6 @@ class hash_table
 	{
 		elem* old_elems = buffer;
 		int old_capacity = capacity;
-#if USE_SEPARATE_HASH_ARRAY
-		auto old_hashes = hashes;
-#endif
 		capacity *= 2;		
 		alloc();
 
@@ -110,11 +117,7 @@ class hash_table
 		for(int i = 0; i < old_capacity; ++i)
 		{
 			auto& e = old_elems[i];
-#if USE_SEPARATE_HASH_ARRAY
-			uint32_t hash = old_hashes[i];
-#else
 			uint32_t hash = e.hash;
-#endif
 			if (hash != 0 && !is_deleted(hash))
 			{
 				insert_helper(hash, std::move(e.key), std::move(e.value));
@@ -123,9 +126,6 @@ class hash_table
 		}
 
 		_aligned_free(old_elems);		
-#if USE_SEPARATE_HASH_ARRAY
-		delete [] old_hashes;
-#endif
 	}
 
 	void construct(int ix, uint32_t hash, Key&& key, Value&& val)
@@ -202,6 +202,16 @@ public:
 		insert_helper(hash_key(key), std::move(key), std::move(val));		
 	}
 
+	void dump()
+	{
+		for (int i=0;i<capacity;i++)
+		{
+			elem e = buffer[i];
+			printf("	[%d,%d:%d]",e.key,e.value,e.hash);
+		}
+		printf("\n\n");
+	}
+
 	~hash_table()
 	{		
 		for( int i = 0; i < capacity; ++i)
@@ -212,9 +222,6 @@ public:
 			}
 		}
 		_aligned_free(buffer);
-#if USE_SEPARATE_HASH_ARRAY
-		delete [] hashes;
-#endif
 	}
 
 	Value* find(const Key& key)

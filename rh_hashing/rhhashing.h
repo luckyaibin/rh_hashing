@@ -24,7 +24,7 @@ void dump_hash_table(hash_node  ht[],int size)
 	for (int i=0;i<size;i++)
 	{
 		hash_node hn = ht[i];
-		printf("\t[%d,%d,%d]",hn.val,hn.hash_value,hn.serial_id);
+		printf("\t[%d,%d,%d-%d]",hn.val,hn.hash_value,i - hn.hash_value,hn.serial_id);
 	}
 	printf("\n\n");
 }
@@ -43,7 +43,7 @@ hash_node* create_hash_table(unsigned int size)
 }
 
 // hash function 
-int hash_function(int v,int hash_size)
+inline int hash_function(int v,int hash_size)
 {
 	v = v + (v << 5);
 	v = v % hash_size;
@@ -63,7 +63,7 @@ int insert(hash_node * ht,int size,int val)
 	hash_node * curr_entry = &ht[hv];
 	int curr_insert_dib = 0;
 	//当前插入结点hn距离初始位置的距离大于hashtable里的结点curr_entry时，继续往后寻找
-	while ( hv < size)
+	while (true)
 	{ 
 		while( hv - curr_entry->hash_value>= curr_insert_dib && hv<size)
 		{
