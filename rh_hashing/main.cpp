@@ -38,6 +38,9 @@ int main()
 	insert(ht,hash_table_size,7);
 	insert(ht,hash_table_size,7);
 	dump_hash_table(ht,hash_table_size);
-
+	int index = find_index(ht,hash_table_size,7);
+	index = find_index(ht,hash_table_size,6);
+	index = find_index(ht,hash_table_size,5);
+	index = find_index(ht,hash_table_size,555);
 	return 0;
 }
