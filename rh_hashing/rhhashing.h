@@ -52,10 +52,71 @@ inline int hash_function(int v,int hash_size)
 }
 
 
-int insert(hash_node * ht,int size,int val)
+int insert(hash_node ht[],int size,int val)
+{
+	int inserted_hash_value = hash_function(val,size);
+	int table_pos = inserted_hash_value;
+	while (true)
+	{
+		table_pos = table_pos % size;
+		int table_hash = ht[table_pos].hash_value;
+		//没有元素
+		if (table_hash<0)
+		{
+			//empty
+			if (table_hash == -1)
+			{
+				ht[table_pos].val = val;
+				ht[table_pos].hash_value = inserted_hash_value;
+				return table_pos;
+			}
+			//deleted
+			else if (table_hash == -2)
+			{
+				ht[table_pos].val = val;
+				ht[table_pos].hash_value = inserted_hash_value;
+				return table_pos;
+			}
+		}
+
+		//注意！！！下面两处之所以要table_pos + size - table_hash ，加上size，是为了保证当回环到起始点的时候计算得到的值仍然是正确的，否则可能出现负值
+		//有元素
+		//table_pos永远是大于等于table_hash的！因为所有元素都是向后错位排列的
+		int table_dib = (table_pos + size - table_hash)%size;
+
+		//table_pos则不一定大于 inserted_hash_value，正常情况下是大于的，但是当从hash_table最后回转到hash_table起始点时候
+		//table_pos 小于inserted_hash_value
+		int inserted_dib = (table_pos  + size - inserted_hash_value) % size;
+		
+		/*
+		hash table: 0	1	2	3	4	5	6	7	8	9
+		hash value  8	1	1	1	2	4	5	5	5	8
+		dib		   -8	0	1	2	2	1	1	2	3	1
+
+		*/
+
+		//swap，相当于把新元素new_node插入到当前table_pos的位置，相当于交换new_node和table_pos上的old_node，然后把old_node向后挪动
+		if(table_dib < inserted_dib)
+		{
+			//保存被插入位置的原始值
+			hash_node tmp_hash_node = ht[table_pos];
+		
+			//插入到表中
+			ht[table_pos].hash_value = inserted_hash_value;
+			ht[table_pos].val		 = val;
+
+			//把表中的值变成需要插入的值
+			//结点变成了新的hash值
+			inserted_hash_value = tmp_hash_node.hash_value;
+			val = tmp_hash_node.val;
+		}
+		table_pos++;
+	}
+}
+int insert_old(hash_node * ht,int size,int val)
 {
 	int hv = hash_function(val,size);
-	
+
 	hash_node *curr_insert = create_hash_node();
 	curr_insert->val = val;
 	curr_insert->hash_value = hv;
@@ -85,7 +146,7 @@ int insert(hash_node * ht,int size,int val)
 		*curr_insert = tmp;	
 		curr_insert_dib = hv - curr_entry->hash_value;
 	}
-	find:
+find:
 	//find position of deleted element.Insert it directly.
 	if (curr_entry->hash_value == -2 )
 	{
