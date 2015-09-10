@@ -90,8 +90,8 @@ int insert(hash_node ht[],int size,int val)
 		
 		/*
 		hash table: 0	1	2	3	4	5	6	7	8	9
-		hash value  8	1	1	1	2	4	5	5	5	8
-		dib		   -8	0	1	2	2	1	1	2	3	1
+		hash value  8	1	1	1	2	4	-2	5	-1	8
+		dib		   -8	0	1	2	2	1	8	2	9	1
 
 		-8不对，其实应该是 （-8+10）%10 = 2
 		*/
@@ -128,7 +128,7 @@ int find_index(hash_node ht[],int size,int val)
 		if (ht[table_pos].hash_value == -1)
 		{
 			return -1;
-		}//当dib突然变小的时候说明已经是其他值的部分了(
+		}//当dib突然变得小于起始点应有的dib的时候，说明已经是其他值的部分了，遇到的-2也不用特殊处理
 		else if (dib < find_len)
 		{
 			return -1;
