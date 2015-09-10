@@ -92,7 +92,7 @@ int rhht_insert(hash_table *ht,int val)
 		//注意！！！下面两处之所以要table_pos + size - table_hash ，加上size，是为了保证当回环到起始点的时候计算得到的值仍然是正确的，否则可能出现负值
 		//有元素
 		//table_pos永远是大于等于table_hash的！因为所有元素都是向后错位排列的
-		int table_dib = (table_pos + size - table_hash)%size;
+		int table_dib = (table_pos + size - table_hash & 0x7FFFFFFFU)%size;
 
 		//table_pos则不一定大于 inserted_hash_value，正常情况下是大于的，但是当从hash_table最后回转到hash_table起始点时候
 		//table_pos 小于inserted_hash_value
@@ -141,10 +141,10 @@ int __rhht_find(hash_table *ht,int val)
 	int find_len = 0;
 	while(true)
 	{
-		int dib = (table_pos + size - hash_value)%size;
+		int dib = (table_pos + size - hash_value & 0x7FFFFFFFU)%size;
 
 		//empty
-		if (ht->hn[table_pos].hash_value == -1)
+		if (ht->hn[table_pos].hash_value == 0)
 		{
 			return -1;
 		}//当dib突然变得小于起始点应有的dib的时候，说明已经是其他值的部分了，遇到的-2也不用特殊处理
@@ -168,7 +168,7 @@ int rhht_remove(hash_table *ht,int val)
 	{
 		return -1;
 	}
-	ht->hn[index].hash_value = -2;//flag it as deleted
+	ht->hn[index].hash_value |= 0x80000000;//flag it as deleted
 	ht->element_num--;
 	return index;
 }

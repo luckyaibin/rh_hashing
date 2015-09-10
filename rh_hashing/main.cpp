@@ -7,8 +7,8 @@ multimap<int,int> mm;
 
 int g_serial_id =0;
 int main()
-{	////			 0	1	2	3	4	5	6	7	8	9
-	int arr[] = {8,	1,	1,	1,	2,	4,	-2,	5,	-1,	8};
+{	////			0	1	2	3	4	5	6	7	8	9
+	int arr[] = {8,	1,	1,	1,	2,	4,	-4,	5,	-8,	8};
 	//	dib		 2	0	1	2	2	1	8	2	9	1
 	/*hash_table<int,int> ht;
 
@@ -34,7 +34,7 @@ int main()
 	dump_hash_table(ht);
 
 	//			 0	1	2	3	4	5	6	7	8	9
-	//int arr[] = {8,	1,	1,	1,	2,	4,	-2,	5,	-1,	8};
+	//int arr[] = {8,	1,	1,	1,	2,	4,	-4,	5,	-8,	8};
 	//	dib		 2	0	1	2	2	1	8	2	9	1
 	for (int i=0;i<10;i++)
 	{
@@ -44,7 +44,7 @@ int main()
 	dump_hash_table(ht);
 
 
-	rhht_insert(ht,200);
+	rhht_insert(ht,5);
 	
 	dump_hash_table(ht);
 
