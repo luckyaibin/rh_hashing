@@ -1,5 +1,9 @@
 ﻿#include "rhhashing.h"
 #include "rh_hahs_table.hpp"
+#include<map>
+using namespace  std;
+multimap<int,int> mm;
+
 
 int g_serial_id =0;
 int main()
@@ -25,22 +29,22 @@ int main()
 	hash_node * ht = create_hash_table(hash_table_size);
 
 	dump_hash_table(ht,hash_table_size);
-	insert(ht,hash_table_size,5);
-	insert(ht,hash_table_size,6);
-	insert(ht,hash_table_size,7);
+	rhht_insert(ht,hash_table_size,5);
+	rhht_insert(ht,hash_table_size,6);
+	rhht_insert(ht,hash_table_size,7);
 
 	dump_hash_table(ht,hash_table_size);
 
-	insert(ht,hash_table_size,7);
-	insert(ht,hash_table_size,7);
-	insert(ht,hash_table_size,7);
-	insert(ht,hash_table_size,7);
-	insert(ht,hash_table_size,7);
-	insert(ht,hash_table_size,7);
+	rhht_insert(ht,hash_table_size,7);
+	rhht_insert(ht,hash_table_size,7);
+	rhht_insert(ht,hash_table_size,7);
+	rhht_insert(ht,hash_table_size,7);
+	rhht_insert(ht,hash_table_size,7);
+	rhht_insert(ht,hash_table_size,7);
 	dump_hash_table(ht,hash_table_size);
-	int index = find_index(ht,hash_table_size,7);
-	index = find_index(ht,hash_table_size,6);
-	index = find_index(ht,hash_table_size,5);
-	index = find_index(ht,hash_table_size,555);
+	int index = __rhht_find(ht,hash_table_size,7);
+	index = __rhht_find(ht,hash_table_size,6);
+	index = __rhht_find(ht,hash_table_size,5);
+	index = __rhht_find(ht,hash_table_size,555);
 	return 0;
 }

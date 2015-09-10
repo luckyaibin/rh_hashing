@@ -52,7 +52,7 @@ inline int hash_function(int v,int hash_size)
 }
 
 
-int insert(hash_node ht[],int size,int val)
+int rhht_insert(hash_node ht[],int size,int val)
 {
 	int inserted_hash_value = hash_function(val,size);
 	int table_pos = inserted_hash_value;
@@ -115,7 +115,12 @@ int insert(hash_node ht[],int size,int val)
 	}
 }
 
-int find_index(hash_node ht[],int size,int val)
+int rhht_remove(hash_node ht[],int size,int val)
+{
+
+}
+
+int __rhht_find(hash_node ht[],int size,int val)
 {
 	int hash_value = hash_function(val,size);
 	int table_pos = hash_value;
