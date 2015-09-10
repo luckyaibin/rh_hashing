@@ -2,7 +2,7 @@
 ///From: https://gist.github.com/ssylvan/5538011,
 ///All rights reverved to the auther,and his file is just one copy.I'll delete it someday.
 //////////////////////////////////////////////////////////////////////////
-
+#if 0
 #define USE_ROBIN_HOOD_HASH 1
 #define USE_SEPARATE_HASH_ARRAY 1
 #include<malloc.h>
@@ -268,3 +268,5 @@ public:
 		return probe_total / size() + 1.0f;
 	}
 };
+
+#endif
