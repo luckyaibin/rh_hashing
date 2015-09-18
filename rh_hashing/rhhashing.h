@@ -18,7 +18,7 @@ struct hash_table
 	int size;		//hashtable的bucket大小
 	int element_num;//有效元素大小
 	float load_factor_percent;
-	hash_node hn[1];
+	hash_node hn[256];
 };
 extern int g_serial_id;
 hash_node* create_hash_node()
@@ -39,12 +39,32 @@ hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_
 	memset(ht->hn,0,sizeof(hash_node)*initial_size);
 	return ht;
 }
-
+// hash function 
+inline int hash_function(int v,int hash_size)
+{
+	v = v + (v << 5);
+	v = v % hash_size;
+	v |= v==0;
+	//v = v & 0xefffffff;
+	return v;
+}
 void dump_hash_table(hash_table * ht)
 {
 	for (int i=0;i<ht->size;i++)
 	{
-		printf("\t[%d,%d]",ht->hn[i].hash_value,ht->hn[i].val);
+		if (i%4 == 0)
+		{
+			printf("\n");
+		}
+		if (ht->hn[i].hash_value > 0)
+		{
+			printf("\t%d,",ht->hn[i].val);
+		}
+		/*if (ht->hn[i].hash_value > 0)
+		{
+		printf("\t%d[%d,%d]%d,",i,ht->hn[i].hash_value,ht->hn[i].val,(ht->size + i - hash_function(ht->hn[i].val,ht->size))%ht->size);
+		}*/
+		
 		//printf("\t[%d,%d,(%d)]",ht->hn[i].val,ht->hn[i].hash_value,i - ht->hn[i].hash_value);
 		//printf("\t[%d,%d,%d-%d]",ht->hn[i].val,ht->hn[i].hash_value,i - ht->hn[i].hash_value,ht->hn[i].serial_id);
 	}
@@ -52,21 +72,16 @@ void dump_hash_table(hash_table * ht)
 }
 
 
-// hash function 
-inline int hash_function(int v,int hash_size)
-{
-	v = v + (v << 5);
-	v = v % hash_size;
-	//v = v & 0xefffffff;
-	return v;
-}
 
 
-int rhht_insert(hash_table *ht,int val)
+//start_table_pos起始查找索引
+int rhht_insert(hash_table *ht,int val,int start_table_pos=0)
 {
 	int size = ht->size;
 	int inserted_hash_value = hash_function(val,size);
 	int table_pos = inserted_hash_value;
+	if (start_table_pos)
+		table_pos = start_table_pos;
 	while (true)
 	{
 		table_pos = table_pos % size;
@@ -133,7 +148,9 @@ int rhht_insert(hash_table *ht,int val)
 	}
 }
 
-int __rhht_find(hash_table *ht,int val)
+
+
+int __rhht_find(hash_table *ht,int val,int *endpos=NULL)
 {
 	int size = ht->size;
 	int hash_value = hash_function(val,size);
@@ -145,20 +162,59 @@ int __rhht_find(hash_table *ht,int val)
 
 		//empty
 		if (ht->hn[table_pos].hash_value == 0)
-		{
+		{	
+			if (endpos)
+				*endpos = table_pos;
 			return -1;
 		}//当dib突然变得小于起始点应有的dib的时候，说明已经是其他值的部分了，遇到的-2也不用特殊处理
 		else if (dib < find_len)
 		{
+			if (endpos)
+				*endpos = table_pos;
 			return -1;
 		}
 		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].val == val)
 		{
+			*endpos = table_pos;
 			return table_pos;
 		}
 		table_pos++;
 		find_len++;
 	}
+}
+//同一个值只存在一个,且不覆盖之前的值
+int rhht_unique_insert(hash_table *ht,int val)
+{
+	int endpos = 0;
+	int index = __rhht_find(ht,val,&endpos);
+	//不存在才插入，根据返回的endpos可以加快插入的速度
+	if (index==-1)
+	{
+		index = rhht_insert(ht,val,endpos);
+		ht->size++;
+	}
+	return index;
+
+}
+
+//同一个值只存在一个,且覆盖之前存在的值
+int rhht_unique_overwrite_insert(hash_table *ht,int val)
+{
+	int endpos = 0;
+	int index = __rhht_find(ht,val,&endpos);
+	//不存在才插入，根据返回的endpos可以加快插入的速度
+	if (index==-1)
+	{
+		index = rhht_insert(ht,val,endpos);
+		ht->size++;
+	}
+	//存在，直接覆盖
+	else
+	{
+		ht->hn[index].val = val
+	}
+	return index;
+
 }
 
 int rhht_remove(hash_table *ht,int val)
