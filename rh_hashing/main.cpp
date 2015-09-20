@@ -3,7 +3,7 @@
 #include<map>
 using namespace  std;
 multimap<int,int> mm;
-typedef map<int,int> IntMapType;
+typedef multimap<int,int> IntMapType;
 
 int g_serial_id =0;
 int main()
@@ -31,21 +31,57 @@ int main()
 	int hash_table_size = 10;
 	hash_table * ht = create_hash_table();
 	IntMapType imt;
+	int should_delete = 0;
 	for (int i=0;i<250;i++)
 	{
-		int v = rand() % 200;
+		int key = rand() % 100;
+		if (key==12 || key==84)
+		{
+			printf("stop...");
+		}
+		
+		int value = rand() % 200 + 100;
 		//imt[v]=v;
-		imt.insert(std::make_pair(v,v));
-		rhht_unique_insert(ht,v);
+		
+		//imt[key]=value;
+			 
+		imt.insert(std::make_pair(key,value));
+		//rhht_unique_insert(ht,key,value);
+		rhht_insert(ht,key,value);
+ 
+		//rhht_remove(ht,key);
+		//rhht_unique_insert(ht,key,value);
+		//rhht_unique_overwrite_insert(ht,key,value);
 	}
 	 
 	
-	dump_hash_table(ht);
+	//dump_hash_table(ht);
+
+	for (int i=0;i<ht->size;i++)
+	{
+		if (ht->hn[i].hash_value > 0)
+		{
+			mm.insert(std::make_pair(ht->hn[i].key,ht->hn[i].value));
+		}
+		
+	}
+	int i=0;
+	for (IntMapType::iterator it = mm.begin();it!=mm.end();it++)
+	{
+		if(i++ %5==0)
+			printf("\n");
+		printf("[%d]=%d,",it->first,it->second);
+	}
 
 	printf("\n\n");
+	
+
+	i=0;
 	for (IntMapType::iterator it = imt.begin();it!=imt.end();it++)
 	{
-		printf("%d ,",it->second);
+		if(i++ %5==0)
+			printf("\n");
+		printf("[%d]=%d,",it->first,it->second);
 	}
 
 	//int index = __rhht_find(ht,7);

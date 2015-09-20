@@ -7,7 +7,8 @@
 // hash node of hash table
 struct hash_node
 {
-	int val;
+	int key;
+	int value;
 	int hash_value;
 	int serial_id;
 };
@@ -58,15 +59,15 @@ void dump_hash_table(hash_table * ht)
 		}
 		if (ht->hn[i].hash_value > 0)
 		{
-			printf("\t%d,",ht->hn[i].val);
+			printf("[%d]=%d,",ht->hn[i].key,ht->hn[i].value);
 		}
 		/*if (ht->hn[i].hash_value > 0)
 		{
-		printf("\t%d[%d,%d]%d,",i,ht->hn[i].hash_value,ht->hn[i].val,(ht->size + i - hash_function(ht->hn[i].val,ht->size))%ht->size);
+		printf("\t%d[%d,%d]%d,",i,ht->hn[i].hash_value,ht->hn[i].key,(ht->size + i - hash_function(ht->hn[i].key,ht->size))%ht->size);
 		}*/
 		
-		//printf("\t[%d,%d,(%d)]",ht->hn[i].val,ht->hn[i].hash_value,i - ht->hn[i].hash_value);
-		//printf("\t[%d,%d,%d-%d]",ht->hn[i].val,ht->hn[i].hash_value,i - ht->hn[i].hash_value,ht->hn[i].serial_id);
+		//printf("\t[%d,%d,(%d)]",ht->hn[i].key,ht->hn[i].hash_value,i - ht->hn[i].hash_value);
+		//printf("\t[%d,%d,%d-%d]",ht->hn[i].key,ht->hn[i].hash_value,i - ht->hn[i].hash_value,ht->hn[i].serial_id);
 	}
 	printf("\n\n");
 }
@@ -75,10 +76,10 @@ void dump_hash_table(hash_table * ht)
 
 
 //start_table_pos起始查找索引
-int rhht_insert(hash_table *ht,int val,int start_table_pos=0)
+int rhht_insert(hash_table *ht,int key,int value,int start_table_pos=0)
 {
 	int size = ht->size;
-	int inserted_hash_value = hash_function(val,size);
+	int inserted_hash_value = hash_function(key,size);
 	int table_pos = inserted_hash_value;
 	if (start_table_pos)
 		table_pos = start_table_pos;
@@ -90,7 +91,8 @@ int rhht_insert(hash_table *ht,int val,int start_table_pos=0)
 			//empty
 			if (table_hash == 0)
 			{
-				ht->hn[table_pos].val = val;
+				ht->hn[table_pos].key = key;
+				ht->hn[table_pos].value = value;
 				ht->hn[table_pos].hash_value = inserted_hash_value;
 				ht->element_num++;
 				return table_pos;
@@ -98,7 +100,7 @@ int rhht_insert(hash_table *ht,int val,int start_table_pos=0)
 			////deleted
 			//else if (table_hash == -2)
 			//{
-			//	ht->hn[table_pos].val = val;
+			//	ht->hn[table_pos].key = key;
 			//	ht->hn[table_pos].hash_value = inserted_hash_value;
 			//	ht->element_num++;
 			//	return table_pos;
@@ -127,7 +129,8 @@ int rhht_insert(hash_table *ht,int val,int start_table_pos=0)
 			//deleted,不能放在上面
 			if (table_hash & 0x80000000)
 			{
-				ht->hn[table_pos].val = val;
+				ht->hn[table_pos].key = key;
+				ht->hn[table_pos].value = value;
 				ht->hn[table_pos].hash_value = inserted_hash_value;
 				ht->element_num++;
 				return table_pos;
@@ -137,23 +140,25 @@ int rhht_insert(hash_table *ht,int val,int start_table_pos=0)
 		
 			//插入到表中
 			ht->hn[table_pos].hash_value = inserted_hash_value;
-			ht->hn[table_pos].val		 = val;
+			ht->hn[table_pos].key		 = key;
+			ht->hn[table_pos].value		 = value;
 
 			//把表中的值变成需要插入的值
 			//结点变成了新的hash值
 			inserted_hash_value = tmp_hash_node.hash_value;
-			val = tmp_hash_node.val;
+			key = tmp_hash_node.key;
+			value = tmp_hash_node.value;
 		}
 		table_pos++;
 	}
 }
 
 
-
-int __rhht_find(hash_table *ht,int val,int *endpos=NULL)
+//find 是用key来查找
+int __rhht_find(hash_table *ht,int key,int *endpos=NULL)
 {
 	int size = ht->size;
-	int hash_value = hash_function(val,size);
+	int hash_value = hash_function(key,size);
 	int table_pos = hash_value;
 	int find_len = 0;
 	while(true)
@@ -173,9 +178,10 @@ int __rhht_find(hash_table *ht,int val,int *endpos=NULL)
 				*endpos = table_pos;
 			return -1;
 		}
-		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].val == val)
+		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)
 		{
-			*endpos = table_pos;
+			if (endpos)
+				*endpos = table_pos;
 			return table_pos;
 		}
 		table_pos++;
@@ -183,14 +189,14 @@ int __rhht_find(hash_table *ht,int val,int *endpos=NULL)
 	}
 }
 //同一个值只存在一个,且不覆盖之前的值
-int rhht_unique_insert(hash_table *ht,int val)
+int rhht_unique_insert(hash_table *ht,int key,int value)
 {
 	int endpos = 0;
-	int index = __rhht_find(ht,val,&endpos);
+	int index = __rhht_find(ht,key,&endpos);
 	//不存在才插入，根据返回的endpos可以加快插入的速度
 	if (index==-1)
 	{
-		index = rhht_insert(ht,val,endpos);
+		index = rhht_insert(ht,key,value,endpos);
 		ht->element_num++;
 	}
 	return index;
@@ -198,28 +204,29 @@ int rhht_unique_insert(hash_table *ht,int val)
 }
 
 //同一个值只存在一个,且覆盖之前存在的值
-int rhht_unique_overwrite_insert(hash_table *ht,int val)
+int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 {
 	int endpos = 0;
-	int index = __rhht_find(ht,val,&endpos);
+	int index = __rhht_find(ht,key,&endpos);
 	//不存在才插入，根据返回的endpos可以加快插入的速度
 	if (index==-1)
 	{
-		index = rhht_insert(ht,val,endpos);
+		index = rhht_insert(ht,key,value,endpos);
 		ht->element_num++;
 	}
 	//存在，直接覆盖
 	else
 	{
-		ht->hn[index].val = val;
+		ht->hn[index].key = key;
+		ht->hn[index].value = value;
 	}
 	return index;
 
 }
 
-int rhht_remove(hash_table *ht,int val)
+int rhht_remove(hash_table *ht,int key)
 {
-	int index = __rhht_find(ht,val);
+	int index = __rhht_find(ht,key);
 	if (index == -1)
 	{
 		return -1;
