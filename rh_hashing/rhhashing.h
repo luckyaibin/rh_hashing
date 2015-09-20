@@ -189,6 +189,40 @@ int __rhht_find(hash_table *ht,int key,int *endpos=NULL)
 	}
 }
 //同一个值只存在一个,且不覆盖之前的值
+int rhht_unique_insert(hash_table *ht,int val)
+{
+	int endpos = 0;
+	int index = __rhht_find(ht,val,&endpos);
+	//不存在才插入，根据返回的endpos可以加快插入的速度
+	if (index==-1)
+	{
+		index = rhht_insert(ht,val,endpos);
+		ht->size++;
+	}
+	return index;
+
+}
+
+//同一个值只存在一个,且覆盖之前存在的值
+int rhht_unique_overwrite_insert(hash_table *ht,int val)
+{
+	int endpos = 0;
+	int index = __rhht_find(ht,val,&endpos);
+	//不存在才插入，根据返回的endpos可以加快插入的速度
+	if (index==-1)
+	{
+		index = rhht_insert(ht,val,endpos);
+		ht->size++;
+	}
+	//存在，直接覆盖
+	else
+	{
+		ht->hn[index].val = val
+	}
+	return index;
+
+}
+//同一个值只存在一个,且不覆盖之前的值
 int rhht_unique_insert(hash_table *ht,int key,int value)
 {
 	int endpos = 0;
