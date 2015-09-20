@@ -71,6 +71,10 @@ int rhht_insert(hash_table *ht,int key,int value,int start_table_pos=0)
 		table_pos = start_table_pos;
 	while (true)
 	{
+		if (ht->element_num>=100)
+		{
+			dump_hash_table(ht);
+		}
 		table_pos = table_pos % size;
 		int table_hash = ht->hn[table_pos].hash_value;
 		//Ã»ÓĞÔªËØ

@@ -1,9 +1,10 @@
 ﻿#include "rhhashing.h"
 #include "rh_hahs_table.hpp"
+#include<Windows.h>
 #include<map>
 using namespace  std;
 multimap<int,int> mm;
-typedef multimap<int,int> IntMapType;
+typedef map<int,int> IntMapType;
 
 int g_serial_id =0;
 int main()
@@ -31,62 +32,44 @@ int main()
 	int hash_table_size = 10;
 	hash_table * ht = create_hash_table();
 	IntMapType imt;
-	int should_delete = 0;
-	for (int i=0;i<250;i++)
-	{
-		int key = rand() % 100;
-		if (key==12 || key==84)
+
+
+	unsigned long curr_t = GetTickCount();
+	for(int times  = 0;times<1000;times++)
+		for (int i=0;i<250;i++)
 		{
-			printf("stop...");
+			int key = rand() % 100;
+			int value = rand() % 200 + 100;
+			if (ht->element_num==100)
+			{
+				printf("stop..");
+			}
+			rhht_unique_overwrite_insert(ht,key,value);
+			if (GetTickCount() % 2 == 0)
+			{
+				rhht_remove(ht,key+1);
+			}		
 		}
-		
-		int value = rand() % 200 + 100;
-		//imt[v]=v;
-		
-		//imt[key]=value;
-			 
-		imt.insert(std::make_pair(key,value));
-		//rhht_unique_insert(ht,key,value);
-		rhht_insert(ht,key,value);
+
+	printf("my hash table elipsed time is %d",GetTickCount() - curr_t);
+
+
+	curr_t = GetTickCount();
+	for(int times  = 0;times<1000;times++)
+		for (int i=0;i<250;i++)
+		{
+			int key = rand() % 100;
+			int value = rand() % 200 + 100;
+			imt.insert(make_pair(key,value));
+			if (GetTickCount() % 2 == 0)
+			{
+				imt.erase(key+1);
+			}		
+		}
+
+	printf("	%d",imt.size());
+	printf("elipsed time is %d",GetTickCount() - curr_t);
  
-		//rhht_remove(ht,key);
-		//rhht_unique_insert(ht,key,value);
-		//rhht_unique_overwrite_insert(ht,key,value);
-	}
-	 
-	
-	//dump_hash_table(ht);
 
-	for (int i=0;i<ht->size;i++)
-	{
-		if (ht->hn[i].hash_value > 0)
-		{
-			mm.insert(std::make_pair(ht->hn[i].key,ht->hn[i].value));
-		}
-		
-	}
-	int i=0;
-	for (IntMapType::iterator it = mm.begin();it!=mm.end();it++)
-	{
-		if(i++ %5==0)
-			printf("\n");
-		printf("[%d]=%d,",it->first,it->second);
-	}
-
-	printf("\n\n");
-	
-
-	i=0;
-	for (IntMapType::iterator it = imt.begin();it!=imt.end();it++)
-	{
-		if(i++ %5==0)
-			printf("\n");
-		printf("[%d]=%d,",it->first,it->second);
-	}
-
-	//int index = __rhht_find(ht,7);
-	//index = __rhht_find(ht,6);
-	//index = __rhht_find(ht,5);
-	//index = __rhht_find(ht,555);
 	return 0;
 }
