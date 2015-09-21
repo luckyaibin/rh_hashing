@@ -18,7 +18,7 @@ struct hash_table
 	int size;		//hashtable的bucket大小
 	int element_num;//有效元素大小
 	float load_factor_percent;
-	hash_node hn[1];
+	hash_node hn[10];
 };
 
 hash_node* create_hash_node()
@@ -47,6 +47,8 @@ inline int hash_function(int v,int hash_size)
 }
 void dump_hash_table(hash_table * ht)
 {
+	static int g_dump_serial=0;
+	printf(" g_dump_serial is %d\n",g_dump_serial++);
 	for (int i=0;i<ht->size;i++)
 	{
 		if (i%4 == 0)
@@ -71,7 +73,7 @@ int rhht_insert(hash_table *ht,int key,int value,int start_table_pos=0)
 		table_pos = start_table_pos;
 	while (true)
 	{
-		if (ht->element_num>=100)
+		if (ht->element_num>=size)
 		{
 			dump_hash_table(ht);
 		}
@@ -94,7 +96,7 @@ int rhht_insert(hash_table *ht,int key,int value,int start_table_pos=0)
 
 		//table_pos则不一定大于 inserted_hash_value，正常情况下是大于的，但是当从hash_table最后回转到hash_table起始点时候
 		//table_pos 小于inserted_hash_value
-		int inserted_dib = (table_pos  + size - (inserted_hash_value & 0x7FFFFFFFU) ) % size;
+		int inserted_dib = (table_pos  + size - (inserted_hash_value & 0x7FFFFFFFU) );
 		//swap，相当于把新元素new_node插入到当前table_pos的位置，相当于交换new_node和table_pos上的old_node，然后把old_node向后挪动
 		if(table_dib < inserted_dib)
 		{
@@ -156,6 +158,7 @@ int __rhht_find(hash_table *ht,int key,int *endpos=NULL)
 			return table_pos;
 		}
 		table_pos++;
+		table_pos %= size;
 		find_len++;
 	}
 }
@@ -169,7 +172,7 @@ int rhht_unique_insert(hash_table *ht,int key,int value)
 	if (index==-1)
 	{
 		index = rhht_insert(ht,key,value,endpos);
-		ht->element_num++;
+		//ht->element_num++;
 	}
 	return index;
 }
@@ -182,8 +185,8 @@ int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 	//不存在才插入，根据返回的endpos可以加快插入的速度
 	if (index==-1)
 	{
-		index = rhht_insert(ht,key,value,endpos);
-		ht->element_num++;
+		index = rhht_insert(ht,key,value,0);
+		//ht->element_num++;
 	}
 	//存在，直接覆盖
 	else
