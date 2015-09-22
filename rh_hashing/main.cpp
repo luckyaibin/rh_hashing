@@ -7,7 +7,7 @@ using namespace  std;
 typedef multimap<int,int> IntMultimapType;
 typedef hash_map<int,int> IntHashMapType;
 
-
+//this is master branch
 int g_serial_id =0;
 
 //测试map的插入删除操作的时间效率
