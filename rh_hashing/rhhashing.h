@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <stdio.h>
 #include <malloc.h>
+
 #if 1
 // hash node of hash table
 struct hash_node
@@ -14,13 +15,13 @@ struct hash_node
 
 struct hash_table
 {
-	int initial_size;
-	int size;		//hashtable的bucket大小
+	int capacity;		//hashtable的bucket大小
+	int treshold;		//阈值大小，是根据load_factor_percent * capacity计算出来的
 	int element_num;//有效元素大小
 	float load_factor_percent;
-	hash_node hn[10];
+	hash_node *hn;
 };
-
+int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos=0);
 hash_node* create_hash_node()
 {
 	hash_node* hn = new hash_node;
@@ -29,13 +30,62 @@ hash_node* create_hash_node()
 
 hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_percent=0.9f )
 {
-	hash_table *ht= (hash_table*)malloc(sizeof(hash_table)+ sizeof(hash_node) * (initial_size-1));
-	ht->size = initial_size;
-	ht->element_num = 0;
+	hash_table *ht= (hash_table*)malloc(sizeof(hash_table));
+	ht->capacity = initial_size;
 	ht->load_factor_percent = load_factor_percent;
+	ht->treshold = int(ht->capacity * ht->load_factor_percent);
+	//至少有一个空位
+	if (ht->capacity - ht->treshold < 1)
+	{
+		ht->treshold = ht->capacity - 1;
+	}
 
+	ht->hn = (hash_node *)malloc(sizeof(hash_node) * initial_size);
+	ht->element_num = 0;
 	memset(ht->hn,0,sizeof(hash_node)*initial_size);
+
 	return ht;
+}
+
+//增加大小到原来的factor倍，默认为2
+int rhht_check_increase_to(hash_table *ht,float increase_factor = 1.50f)
+{
+	//没达到极限大小
+	if (ht->element_num < ht->treshold)
+	{
+		return 0;
+	}
+
+	
+	//重新分配内存
+	int old_capacity = ht->capacity;
+	hash_node* old_hn   = ht->hn;
+
+	int new_capacity = int(ht->capacity * increase_factor);
+	hash_node *hn = (hash_node*)malloc(sizeof(hash_node) * new_capacity);
+	memset(hn,0,sizeof(hash_node) * new_capacity);
+	ht->hn = hn;
+	ht->element_num = 0;
+	ht->capacity = new_capacity;
+	ht->treshold = int(ht->capacity * ht->load_factor_percent);
+	printf("increased from %d to %d \n",old_capacity,new_capacity);
+	//至少有一个空位，保证至少能够成功在插入，操作之后才可以增加capacity
+	if (ht->capacity - ht->treshold < 1)
+	{
+		ht->treshold = ht->capacity - 1;
+	}
+	
+
+	//拷贝原来的值
+	for (int i=0;i<old_capacity;i++)
+	{
+		if (old_hn[i].hash_value > 0)
+		{
+			rhht_insert_helper(ht,old_hn[i].key,old_hn[i].value);
+		}
+	}
+	free(old_hn);
+	return ht->capacity;
 }
 // hash function 
 inline int hash_function(int v,int hash_size)
@@ -49,7 +99,7 @@ void dump_hash_table(hash_table * ht)
 {
 	static int g_dump_serial=0;
 	printf(" g_dump_serial is %d\n",g_dump_serial++);
-	for (int i=0;i<ht->size;i++)
+	for (int i=0;i<ht->capacity;i++)
 	{
 		if (i%4 == 0)
 		{
@@ -64,19 +114,17 @@ void dump_hash_table(hash_table * ht)
 }
 
 //start_table_pos起始查找索引
-int rhht_insert(hash_table *ht,int key,int value,int start_table_pos=0)
+int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_instinct)
 {
-	int size = ht->size;
+	int is_increased = rhht_check_increase_to(ht);
+	int size = ht->capacity;
 	int inserted_hash_value = hash_function(key,size);
 	int table_pos = inserted_hash_value;
-	if (start_table_pos)
-		table_pos = start_table_pos;
+	//重新分配了大小的话，启发式的start_table_pos就不能用了，失效了
+	if ((!is_increased) && start_table_pos_instinct)
+		table_pos = start_table_pos_instinct;
 	while (true)
 	{
-		if (ht->element_num>=size)
-		{
-			dump_hash_table(ht);
-		}
 		table_pos = table_pos % size;
 		int table_hash = ht->hn[table_pos].hash_value;
 		//没有元素
@@ -129,9 +177,9 @@ int rhht_insert(hash_table *ht,int key,int value,int start_table_pos=0)
 
 
 //find 是用key来查找
-int __rhht_find(hash_table *ht,int key,int *endpos=NULL)
+int __rhht_find_helper(hash_table *ht,int key,int *endpos_output=NULL)
 {
-	int size = ht->size;
+	int size = ht->capacity;
 	int hash_value = hash_function(key,size);
 	int table_pos = hash_value;
 	int find_len = 0;
@@ -141,20 +189,20 @@ int __rhht_find(hash_table *ht,int key,int *endpos=NULL)
 		//empty
 		if (ht->hn[table_pos].hash_value == 0)
 		{	
-			if (endpos)
-				*endpos = table_pos;
+			if (endpos_output)
+				*endpos_output = table_pos;
 			return -1;
 		}//当dib突然变得小于起始点应有的dib的时候，说明已经是其他值的部分了
 		else if (dib < find_len)
 		{
-			if (endpos)
-				*endpos = table_pos;
+			if (endpos_output)
+				*endpos_output = table_pos;
 			return -1;
 		}
 		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)
 		{
-			if (endpos)
-				*endpos = table_pos;
+			if (endpos_output)
+				*endpos_output = table_pos;
 			return table_pos;
 		}
 		table_pos++;
@@ -163,16 +211,20 @@ int __rhht_find(hash_table *ht,int key,int *endpos=NULL)
 	}
 }
 
+int rhht_multi_insert(hash_table *ht,int key,int value)
+{
+	return rhht_insert_helper(ht,key,value);
+}
+
 //同一个值只存在一个,且不覆盖之前的值
 int rhht_unique_insert(hash_table *ht,int key,int value)
 {
 	int endpos = 0;
-	int index = __rhht_find(ht,key,&endpos);
+	int index = __rhht_find_helper(ht,key,&endpos);
 	//不存在才插入，根据返回的endpos可以加快插入的速度
 	if (index==-1)
 	{
-		index = rhht_insert(ht,key,value,endpos);
-		//ht->element_num++;
+		index = rhht_insert_helper(ht,key,value,endpos);
 	}
 	return index;
 }
@@ -181,12 +233,11 @@ int rhht_unique_insert(hash_table *ht,int key,int value)
 int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 {
 	int endpos = 0;
-	int index = __rhht_find(ht,key,&endpos);
+	int index = __rhht_find_helper(ht,key,&endpos);
 	//不存在才插入，根据返回的endpos可以加快插入的速度
 	if (index==-1)
 	{
-		index = rhht_insert(ht,key,value,0);
-		//ht->element_num++;
+		index = rhht_insert_helper(ht,key,value,endpos);
 	}
 	//存在，直接覆盖
 	else
@@ -197,14 +248,29 @@ int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 	return index;
 }
 
-int rhht_remove(hash_table *ht,int key)
+int rhht_remove_helper(hash_table *ht,int key)
 {
-	int index = __rhht_find(ht,key);
+	int index = __rhht_find_helper(ht,key);
 	if (index == -1)
 		return -1;
 	ht->hn[index].hash_value |= 0x80000000;//flag it as deleted
 	ht->element_num--;
 	return index;
+}
+
+int rhht_remove_one(hash_table *ht,int key)
+{
+	return  rhht_remove_helper(ht,key);
+}
+
+int rhht_remove_all(hash_table *ht,int key)
+{
+	int removed_num = 0;
+	while (-1 != rhht_remove_helper(ht,key))
+	{
+		removed_num++;
+	}
+	return removed_num;
 }
 
 #endif
