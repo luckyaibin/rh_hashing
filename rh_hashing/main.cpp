@@ -85,7 +85,7 @@ int test2()
 		::Sleep(1);
 		if (GetTickCount() % 5 == 0)
 		{
-			rhht_remove_helper(ht,key+1);
+			rhht_backshift_remove_helper(ht,key+1);
 			imt.erase(key+1);
 		}		
 	}

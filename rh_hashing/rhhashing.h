@@ -248,25 +248,105 @@ int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 	return index;
 }
 
-int rhht_remove_helper(hash_table *ht,int key)
+
+
+//find 是用key来查找 findpos_output是查找成功和查找失败时的当前索引。shift_endpos_output是backshift删除时需要移动数据块的索引。
+//将来需要移动 findpos_output ~ shift_endpos_output 之间的数据块
+int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_output=NULL,int *shift_endpos_output=NULL)
 {
-	int index = __rhht_find_helper(ht,key);
+	int find_result = 0;
+	int size = ht->capacity;
+	int hash_value = hash_function(key,size);
+	int table_pos = hash_value;
+	int find_len = 0;
+	
+	while(0 == find_result)
+	{
+		int dib = (table_pos + size - hash_value & 0x7FFFFFFFU)%size;
+		//empty
+		if (ht->hn[table_pos].hash_value == 0)
+		{	
+			if (findpos_output)
+				*findpos_output = table_pos;
+			find_result = -1;
+		}//当dib突然变得小于起始点应有的dib的时候，说明已经是其他值的部分了
+		else if (dib < find_len)
+		{
+			if (findpos_output)
+				*findpos_output = table_pos;
+			find_result = -1;
+		}
+		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)
+		{
+			if (findpos_output)
+				*findpos_output = table_pos;
+			find_result =  table_pos;
+		}
+		table_pos++;
+		table_pos %= size;
+		find_len++;
+	}
+
+	//-1：表示不存在，那么findpos_output是有意义的，shift_endpos_output是无意义的
+	//不为-1：表示存在，要找到需要被shift的结尾的位置 findpos_output是有意义的，shift_endpos_output是有意义的
+	//不是每次删除都要执行back_shift，而是当dib大于某个值，比如5 的时候，才需要shift，防止
+	if(find_result != -1)
+	{
+		int search_len = 0;
+		while (true)
+		{
+			//从find_result之后开始找，需要向左移动一个位置的结束索引
+			int end_pos = (find_result + 1 + search_len) % ht->capacity;//end_pos可能从末尾回环到最开始
+			int table_hash = ht->hn[end_pos].hash_value & 0x7FFFFFFFU;
+			int dib = find_result + 1 + search_len - table_hash;
+			//empty
+			if(table_hash  == 0)
+			{
+				if(shift_endpos_output)
+					*shift_endpos_output = end_pos;
+				break;
+			}
+			else//只移动dib大于5的部分
+			{
+				if(dib > 5)
+				{
+					if(shift_endpos_output)
+						*shift_endpos_output = end_pos;
+				}
+				else
+				{
+					break;
+				}
+			}
+			search_len++;	
+		}
+	}
+  
+}
+
+//use backshift delete
+int rhht_backshift_remove_helper(hash_table *ht,int key)
+{
+	int shift_start,shift_end;
+	int index = __rhht_find_helper_for_backshift_remove(ht,key,&shift_start,&shift_end);
 	if (index == -1)
 		return -1;
 	ht->hn[index].hash_value |= 0x80000000;//flag it as deleted
 	ht->element_num--;
+	// do shift
+
 	return index;
 }
 
 int rhht_remove_one(hash_table *ht,int key)
 {
-	return  rhht_remove_helper(ht,key);
+	return  rhht_backshift_remove_helper(ht,key);
 }
 
 int rhht_remove_all(hash_table *ht,int key)
 {
 	int removed_num = 0;
-	while (-1 != rhht_remove_helper(ht,key))
+	while (-1 != rhht_backshift_remove_helper(ht,key))
 	{
 		removed_num++;
 	}
