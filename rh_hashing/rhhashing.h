@@ -110,7 +110,7 @@ void dump_hash_table(hash_table * ht)
 	{
 		//if (ht->hn[i].hash_value > 0)
 		{
-			printf("[%d:%d,%d~key%d,%d]	",i,ht->hn[i].hash_value,(ht->capacity + i - ht->hn[i].hash_value) % ht->capacity,ht->hn[i].key,ht->hn[i].value);
+			printf("[index%d:hash_value%d,dib%d~key%d,value%d]	",i,ht->hn[i].hash_value,(ht->capacity + i - ht->hn[i].hash_value) % ht->capacity,ht->hn[i].key,ht->hn[i].value);
 			out_put_count++;
 		}
 		if (out_put_count%4 == 3)

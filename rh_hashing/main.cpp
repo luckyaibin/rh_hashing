@@ -204,10 +204,18 @@ start:
 	{
 		dump_hash_table(ht);
 	}
+	if (loop_count == 77)
+	{
+		dump_hash_table(ht);
+	}
 	printf("removed value:%d \n",remove_v);
 	rhht_remove_one2(ht,remove_v);
 	imt.erase(remove_v);
 	if (loop_count == 13)
+	{
+		dump_hash_table(ht);
+	}
+	if (loop_count == 77)
 	{
 		dump_hash_table(ht);
 	}
