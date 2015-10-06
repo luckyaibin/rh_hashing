@@ -292,38 +292,41 @@ int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_
 	//不是每次删除都要执行back_shift，而是当dib大于某个值，比如5 的时候，才需要shift，防止
 	if(find_result != -1)
 	{
-		int search_len = 0;
+		//需要find_result2是需要shiftback的结束的索引
+		int find_result2 = find_result;
+		if (shift_endpos_output)
+			*shift_endpos_output = find_result2;
 		while (true)
 		{
-			//从find_result之后开始找，需要向左移动一个位置的结束索引
-			int end_pos = (find_result + 1 + search_len) % ht->capacity;//end_pos可能从末尾回环到最开始
-			int table_hash = ht->hn[end_pos].hash_value & 0x7FFFFFFFU;
-			int dib = find_result + 1 + search_len - table_hash;
 			//empty
-			if(table_hash  == 0)
-			{
-				if(shift_endpos_output)
-					*shift_endpos_output = end_pos;
+			if (ht->hn[find_result2].hash_value == 0)
 				break;
-			}
-			else//只移动dib大于5的部分
-			{
-				if(dib > 5)
-				{
-					if(shift_endpos_output)
-						*shift_endpos_output = end_pos;
-				}
-				else
-				{
-					break;
-				}
-			}
-			search_len++;	
+			//dib == 0
+			else if ( (find_result2 + size - ht->hn[find_result2].hash_value & 0x7FFFFFFF) % size == 0)
+				break;
+			
+			if (shift_endpos_output)
+				*shift_endpos_output = find_result2;
+			find_result2++;
+			find_result2 %= size;
 		}
 	}
-  
+	return find_result;
 }
 
+//use backshift delete
+int rhht_remove_helper(hash_table *ht,int key)
+{
+	int shift_start,shift_end;
+	int index = __rhht_find_helper(ht,key);
+	if (index == -1)
+		return -1;
+
+	ht->hn[index].hash_value |= 0x80000000;//flag it as deleted
+	ht->element_num--;
+
+	return index;
+}
 //use backshift delete
 int rhht_backshift_remove_helper(hash_table *ht,int key)
 {
@@ -331,15 +334,26 @@ int rhht_backshift_remove_helper(hash_table *ht,int key)
 	int index = __rhht_find_helper_for_backshift_remove(ht,key,&shift_start,&shift_end);
 	if (index == -1)
 		return -1;
-	ht->hn[index].hash_value |= 0x80000000;//flag it as deleted
+
+	//do the shift
+	int size = ht->capacity;
+	int shift_index = shift_start;
+	while( shift_index != shift_end)
+	{
+		ht->hn[shift_index] = ht->hn[shift_index+1];
+		shift_index++;
+		shift_index %= size;
+	}
+	//最后一个标记为空
+	ht->hn[shift_end].hash_value = 0x00000000;//flag it as deleted
 	ht->element_num--;
-	// do shift
 
 	return index;
 }
 
 int rhht_remove_one(hash_table *ht,int key)
 {
+	//return  rhht_backshift_remove_helper(ht,key);
 	return  rhht_backshift_remove_helper(ht,key);
 }
 

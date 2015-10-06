@@ -31,7 +31,7 @@ int test1()
 start:
 	unsigned long curr_t = GetTickCount();
 	for(int times  = 0;times<10;times++)
-		for (int i=0;i<25000;i++)
+		for (int i=0;i<2500;i++)
 		{
 			int key = arry[i];
 			int value = key * 10;			 
@@ -47,7 +47,7 @@ start:
 
 	curr_t = GetTickCount();
 	for(int times  = 0;times<10;times++)
-		for (int i=0;i<25000;i++)
+		for (int i=0;i<2500;i++)
 		{
 			int key = arry[i];
 			int value = key * 10;
@@ -75,7 +75,7 @@ int test2()
 	start:
 	for (int i=0;i<250;i++)
 	{
-		int key =  GetTickCount() % 1000;
+		int key =  GetTickCount() % 100000;
 		int value = key * 10;
 		//rhht_unique_overwrite_insert(ht,key,value);
 		//imt.insert(make_pair(key,value));
@@ -85,7 +85,7 @@ int test2()
 		::Sleep(1);
 		if (GetTickCount() % 5 == 0)
 		{
-			rhht_backshift_remove_helper(ht,key+1);
+			rhht_remove_one(ht,key+1);
 			imt.erase(key+1);
 		}		
 	}
@@ -110,8 +110,6 @@ int test2()
 					printf("value not equal...%d,%d\n",key,value);
 				}
 			}
-
-
 		}
 	}
 
