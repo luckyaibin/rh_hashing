@@ -110,7 +110,7 @@ void dump_hash_table(hash_table * ht)
 	{
 		//if (ht->hn[i].hash_value > 0)
 		{
-			printf("[%d:%d,%d~key%d]	",i,ht->hn[i].hash_value,(ht->capacity + i - ht->hn[i].hash_value) % ht->capacity,ht->hn[i].key);
+			printf("[%d:%d,%d~key%d,%d]	",i,ht->hn[i].hash_value,(ht->capacity + i - ht->hn[i].hash_value) % ht->capacity,ht->hn[i].key,ht->hn[i].value);
 			out_put_count++;
 		}
 		if (out_put_count%4 == 3)
@@ -360,7 +360,7 @@ int rhht_backshift_remove_helper(hash_table *ht,int key)
 		printf("shifted count : %d \n",shift_count);
 	}
 	//最后一个标记为空
-	ht->hn[shift_end].hash_value = 0x00000000;//flag it as deleted
+	ht->hn[shift_end].hash_value = 0x00000000;//flag it as empty
 	ht->element_num--;
 
 	return index;
