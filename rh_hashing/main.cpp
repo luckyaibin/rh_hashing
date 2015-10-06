@@ -36,7 +36,7 @@ start:
 			int key = arry[i];
 			int value = key * 10;			 
 			rhht_unique_overwrite_insert(ht,key,value);
-			if (key % 5 == 0)
+			if (key % 2 == 0)
 			{
 				rhht_remove_one(ht,key);
 			}		
@@ -52,7 +52,7 @@ start:
 			int key = arry[i];
 			int value = key * 10;
 			imt.insert(make_pair(key,value));
-			if (key % 5 == 0)
+			if (key % 2 == 0)
 			{
 				imt.erase(key);
 			}		
@@ -75,7 +75,7 @@ int test2()
 	start:
 	for (int i=0;i<250;i++)
 	{
-		int key =  GetTickCount() % 100000;
+		int key =  GetTickCount() % 1000;
 		int value = key * 10;
 		//rhht_unique_overwrite_insert(ht,key,value);
 		//imt.insert(make_pair(key,value));
@@ -85,7 +85,7 @@ int test2()
 		::Sleep(1);
 		if (GetTickCount() % 5 == 0)
 		{
-			rhht_remove_one(ht,key+1);
+			rhht_remove_one2(ht,key+1);
 			imt.erase(key+1);
 		}		
 	}
@@ -101,7 +101,7 @@ int test2()
 			IntHashMapType::iterator it = imt.find(key);
 			if (it == imt.end())
 			{
-				printf("error occurred.%d,%d\n",key,value);
+				printf("error occurred.%d,%d,hash_value:%d,index:%d,总大小:%d\n",key,value,ht->hn[i].hash_value,i,ht->capacity);
 			}
 			else
 			{
@@ -172,9 +172,33 @@ start:
 	return 0;
 }
 
+//测试backshift deleteion的正确性
+int test4()
+{
+	int arr[16] = {0};
+	hash_table * ht = create_hash_table(20);
+	for (int i=0;i<16;i++)
+	{
+		int v = rand() % 10 + 1;
+		arr[i] = v;
+		printf("key%d ,hash:%d	,",v,hash_function(v,ht->capacity));
+		rhht_multi_insert(ht,v,v*10);
+		//dump_hash_table(ht);
+	}
+	dump_hash_table(ht);
+
+	//rhht_remove_one(ht,5);
+	rhht_multi_insert(ht,6,6666);
+	dump_hash_table(ht);
+
+	rhht_remove_one(ht,6);
+	dump_hash_table(ht);
+	return 0;
+}
+
 int main()
 {
-	test1();
+	test2();
 	IntMultimapType imt;
 	imt.insert(make_pair(10,20));
 	imt.insert(make_pair(100,200));

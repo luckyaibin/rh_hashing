@@ -88,10 +88,16 @@ int rhht_check_increase_to(hash_table *ht,float increase_factor = 1.50f)
 	return ht->capacity;
 }
 // hash function 
+//inline int hash_function(int v,int hash_size)
+//{
+//	v = v + (v << 5);
+//	v = v % hash_size;
+//	v |= v==0;//不返回hash值0
+//	return v;
+//}
 inline int hash_function(int v,int hash_size)
 {
-	v = v + (v << 5);
-	v = v % hash_size;
+	v = v % 200;
 	v |= v==0;//不返回hash值0
 	return v;
 }
@@ -99,15 +105,17 @@ void dump_hash_table(hash_table * ht)
 {
 	static int g_dump_serial=0;
 	printf(" g_dump_serial is %d\n",g_dump_serial++);
+	int out_put_count = -1;
 	for (int i=0;i<ht->capacity;i++)
 	{
-		if (i%4 == 0)
+		//if (ht->hn[i].hash_value > 0)
+		{
+			printf("[%d:%d,%d~key%d]	",i,ht->hn[i].hash_value,(ht->capacity + i - ht->hn[i].hash_value) % ht->capacity,ht->hn[i].key);
+			out_put_count++;
+		}
+		if (out_put_count%4 == 3)
 		{
 			printf("\n");
-		}
-		if (ht->hn[i].hash_value > 0)
-		{
-			printf("[%d]=%d,",ht->hn[i].key,ht->hn[i].value);
 		}
 	}
 	printf("\n\n");
@@ -301,8 +309,9 @@ int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_
 			//empty
 			if (ht->hn[find_result2].hash_value == 0)
 				break;
-			//dib == 0
-			else if ( (find_result2 + size - ht->hn[find_result2].hash_value & 0x7FFFFFFF) % size == 0)
+			//dib == 0,有可能find_result就是dib为0的，要判断后面的
+			int dib = (find_result2 + size - ht->hn[find_result2].hash_value & 0x7FFFFFFF) % size;
+			if ( (find_result2!=find_result) &&  (dib == 0) )
 				break;
 			
 			if (shift_endpos_output)
@@ -338,11 +347,17 @@ int rhht_backshift_remove_helper(hash_table *ht,int key)
 	//do the shift
 	int size = ht->capacity;
 	int shift_index = shift_start;
+	int shift_count = 0;
 	while( shift_index != shift_end)
 	{
-		ht->hn[shift_index] = ht->hn[shift_index+1];
+		shift_count ++;
+		ht->hn[shift_index] = ht->hn[ (shift_index+1) % size];
 		shift_index++;
 		shift_index %= size;
+	}
+	if (shift_count>0)
+	{
+		printf("shifted count : %d \n",shift_count);
 	}
 	//最后一个标记为空
 	ht->hn[shift_end].hash_value = 0x00000000;//flag it as deleted
@@ -353,8 +368,11 @@ int rhht_backshift_remove_helper(hash_table *ht,int key)
 
 int rhht_remove_one(hash_table *ht,int key)
 {
-	//return  rhht_backshift_remove_helper(ht,key);
-	return  rhht_backshift_remove_helper(ht,key);
+	return  rhht_remove_helper(ht,key);
+}
+int rhht_remove_one2(hash_table *ht,int key)
+{
+	return  rhht_backshift_remove_helper(ht,key); 
 }
 
 int rhht_remove_all(hash_table *ht,int key)
