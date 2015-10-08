@@ -97,7 +97,7 @@ int rhht_check_increase_to(hash_table *ht,float increase_factor = 1.50f)
 //}
 inline int hash_function(int v,int hash_size)
 {
-	v = v % 200;
+	v = v % hash_size;
 	v |= v==0;//不返回hash值0
 	return v;
 }
@@ -110,12 +110,12 @@ void dump_hash_table(hash_table * ht)
 	{
 		//if (ht->hn[i].hash_value > 0)
 		{
-			printf("[index%d:hash_value%d,dib%d~key%d,value%d]	",i,ht->hn[i].hash_value,(ht->capacity + i - ht->hn[i].hash_value) % ht->capacity,ht->hn[i].key,ht->hn[i].value);
+			printf("[index%d:hash_value%d,dib%d~key%d,value%d]	\n",i,ht->hn[i].hash_value,(ht->capacity + i - ht->hn[i].hash_value) % ht->capacity,ht->hn[i].key,ht->hn[i].value);
 			out_put_count++;
 		}
 		if (out_put_count%4 == 3)
 		{
-			printf("\n");
+			//printf("\n");
 		}
 	}
 	printf("\n\n");
@@ -152,7 +152,7 @@ int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_inst
 
 		//table_pos则不一定大于 inserted_hash_value，正常情况下是大于的，但是当从hash_table最后回转到hash_table起始点时候
 		//table_pos 小于inserted_hash_value
-		int inserted_dib = (table_pos  + size - (inserted_hash_value & 0x7FFFFFFFU) );
+		int inserted_dib = (table_pos  + size - (inserted_hash_value & 0x7FFFFFFFU) )%size;
 		//swap，相当于把新元素new_node插入到当前table_pos的位置，相当于交换new_node和table_pos上的old_node，然后把old_node向后挪动
 		if(table_dib < inserted_dib)
 		{
@@ -228,7 +228,7 @@ int rhht_multi_insert(hash_table *ht,int key,int value)
 int rhht_unique_insert(hash_table *ht,int key,int value)
 {
 	int endpos = 0;
-	int index = __rhht_find_helper(ht,key,&endpos);
+	int index = __rhht_find_helper(ht,key,NULL);
 	//不存在才插入，根据返回的endpos可以加快插入的速度
 	if (index==-1)
 	{
@@ -241,7 +241,7 @@ int rhht_unique_insert(hash_table *ht,int key,int value)
 int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 {
 	int endpos = 0;
-	int index = __rhht_find_helper(ht,key,&endpos);
+	int index = __rhht_find_helper(ht,key,NULL);
 	//不存在才插入，根据返回的endpos可以加快插入的速度
 	if (index==-1)
 	{

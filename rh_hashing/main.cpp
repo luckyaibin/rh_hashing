@@ -69,13 +69,13 @@ start:
 //测试map插入删除的正确性
 int test2()
 {
-	hash_table * ht = create_hash_table(1024);
+	hash_table * ht = create_hash_table(100);
 	IntHashMapType imt;
-
+	int key = 0;
 	start:
 	for (int i=0;i<250;i++)
 	{
-		int key =  GetTickCount() % 1000;
+		key =  GetTickCount() % 200;
 		int value = key * 10;
 		//rhht_unique_overwrite_insert(ht,key,value);
 		//imt.insert(make_pair(key,value));
@@ -83,8 +83,10 @@ int test2()
 		rhht_unique_insert(ht,key,value);
 		imt.insert(make_pair(key,value));
 		::Sleep(1);
-		if (GetTickCount() % 5 == 0)
+		int cnt = GetTickCount();
+		if (cnt % 3 == 0)
 		{
+			printf("removed %d ..\n ",key+1);
 			rhht_remove_one2(ht,key+1);
 			imt.erase(key+1);
 		}		
@@ -179,41 +181,46 @@ int test4()
 	int g_serial = 1000;
 
 
-	int arr[16] = {0};
-	for (int i=0;i<16;i++)
+	int arr[5] = {0};
+	for (int i=0;i<5;i++)
 	{
 		arr[i] = rand() % 10;
 	}
 
-	hash_table * ht = create_hash_table(20);
+	hash_table * ht = create_hash_table(7);
 	IntHashMapType imt;
 	int loop_count = 0;
 start:
 	//插入列表里的某个随机值
-	int index = rand() % 16;
+	int index = rand() % 5;
 	int insert_v = arr[index];
 
-	printf("inserted value:%d ,loop_count:%d \n",insert_v,++loop_count);
+	printf("111111 inserted key%d ,loop_count:%d \n",insert_v,++loop_count);
+	if (loop_count == 17)
+		printf("");
 	rhht_unique_insert(ht,insert_v,++g_serial);
 	imt.insert(make_pair(insert_v,g_serial));
-
+	dump_hash_table(ht);
 	//删除列表里的某个随机值
-	index = rand() % 16;
+	index = rand() % 5;
 	int remove_v = arr[index];
-	if (loop_count == 13)
+	if (loop_count == 17)
 	{
-		dump_hash_table(ht);
+		//dump_hash_table(ht);
+		printf("");
 	}
 	if (loop_count == 77)
 	{
 		dump_hash_table(ht);
 	}
-	printf("removed value:%d \n",remove_v);
+	printf("222222 removed key%d ,loop_count:%d \n",remove_v,loop_count);
 	rhht_remove_one2(ht,remove_v);
 	imt.erase(remove_v);
-	if (loop_count == 13)
+	dump_hash_table(ht);
+	if (loop_count == 17)
 	{
-		dump_hash_table(ht);
+		//dump_hash_table(ht);
+		printf("");
 	}
 	if (loop_count == 77)
 	{
@@ -246,9 +253,15 @@ start:
 	return 0;
 }
 
+int test5()
+{
+
+	return 0;
+}
+
 int main()
 {
-	test4();
+	test2();
 	IntHashMapType imt;
 	imt.insert(make_pair(10,20));
 	imt.insert(make_pair(100,200));
