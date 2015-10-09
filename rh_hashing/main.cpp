@@ -69,6 +69,9 @@ start:
 //测试map插入删除的正确性
 int test2()
 {
+	hash_table * ht_before_insert=NULL;
+	hash_table * ht_before_remove=NULL;
+	hash_table * ht_after_remove=NULL;
 	hash_table * ht = create_hash_table(100);
 	IntHashMapType imt;
 	int key = 0;
@@ -79,20 +82,26 @@ int test2()
 		int value = key * 10;
 		//rhht_unique_overwrite_insert(ht,key,value);
 		//imt.insert(make_pair(key,value));
-
+		duplicate(ht,&ht_before_insert);
 		rhht_unique_insert(ht,key,value);
+		duplicate(ht,&ht_before_remove);
+		printf("rhht_unique_insert(ht,%d,%d) \n",key,value);
 		imt.insert(make_pair(key,value));
 		::Sleep(1);
 		int cnt = GetTickCount();
 		if (cnt % 3 == 0)
 		{
-			printf("removed %d ..\n ",key+1);
+			printf("rhht_remove_one2(ht,%d) \n ",key+1);
+				
 			rhht_remove_one2(ht,key+1);
+			duplicate(ht,&ht_after_remove);
+			
 			imt.erase(key+1);
 		}		
+	
 	}
 
-	printf("my rh size is : %d,map size is :%d\n",ht->element_num,imt.size());
+	//printf("my rh size is : %d,map size is :%d\n",ht->element_num,imt.size());
 
 	for (int i=0;i<ht->capacity;i++)
 	{
@@ -103,6 +112,10 @@ int test2()
 			IntHashMapType::iterator it = imt.find(key);
 			if (it == imt.end())
 			{
+				dump_hash_table(ht_before_insert);
+				dump_hash_table(ht_before_remove);
+				dump_hash_table(ht_after_remove);
+
 				dump_hash_table(ht);
 				printf("error occurred.%d,%d,hash_value:%d,index:%d,总大小:%d\n",key,value,ht->hn[i].hash_value,i,ht->capacity);
 			}

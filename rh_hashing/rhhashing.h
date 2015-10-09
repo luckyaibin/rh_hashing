@@ -28,6 +28,22 @@ hash_node* create_hash_node()
 	return hn;
 }
 
+inline void duplicate(hash_table* ht,hash_table** dest_ht)
+{
+	if (*dest_ht)
+	{
+		//free((*dest_ht)->hn);
+		//free(*dest_ht);
+	}
+	hash_table *ht2 = (hash_table*)malloc(sizeof(hash_table));
+	ht2->hn = (hash_node*)malloc(ht->capacity*sizeof(hash_node));
+
+	memcpy(ht2,ht,sizeof(hash_table));
+	memcpy(&ht2->hn[0],&ht->hn[0],ht->capacity*sizeof(hash_node));
+
+	*dest_ht = ht2;
+}
+
 hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_percent=0.9f )
 {
 	hash_table *ht= (hash_table*)malloc(sizeof(hash_table));
@@ -88,19 +104,19 @@ int rhht_check_increase_to(hash_table *ht,float increase_factor = 1.50f)
 	return ht->capacity;
 }
 // hash function 
-//inline int hash_function(int v,int hash_size)
-//{
-//	v = v + (v << 5);
-//	v = v % hash_size;
-//	v |= v==0;//不返回hash值0
-//	return v;
-//}
 inline int hash_function(int v,int hash_size)
 {
+	v = v + (v << 5);
 	v = v % hash_size;
 	v |= v==0;//不返回hash值0
 	return v;
 }
+//inline int hash_function(int v,int hash_size)
+//{
+//	v = v % hash_size;
+//	v |= v==0;//不返回hash值0
+//	return v;
+//}
 void dump_hash_table(hash_table * ht)
 {
 	static int g_dump_serial=0;
@@ -352,12 +368,11 @@ int rhht_backshift_remove_helper(hash_table *ht,int key)
 	{
 		shift_count ++;
 		ht->hn[shift_index] = ht->hn[ (shift_index+1) % size];
-		shift_index++;
-		shift_index %= size;
+		shift_index = (shift_index+1)%size;
 	}
 	if (shift_count>0)
 	{
-		printf("shifted count : %d \n",shift_count);
+		//printf("shifted count : %d \n",shift_count);
 	}
 	//最后一个标记为空
 	ht->hn[shift_end].hash_value = 0x00000000;//flag it as empty
