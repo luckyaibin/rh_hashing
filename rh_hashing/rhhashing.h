@@ -5,6 +5,120 @@
 #include <malloc.h>
 
 #if 1
+
+struct dynamic_int_array
+{
+	int size;
+	int capacity;
+	int buff_stack[256];
+	int *buff_heap;
+};
+
+void dump_array(dynamic_int_array* arr)
+{
+	for (int i=0;i<arr->size;i++)
+	{
+		if (arr->buff_heap)
+			printf("%d	",arr->buff_heap[i]);
+		else
+			printf("%d	",arr->buff_stack[i]);		
+	}
+	printf("\n\n\n");
+}
+
+int array_init(dynamic_int_array *arr)
+{
+	arr->size = 0;
+	arr->capacity = 256;
+	arr->buff_heap=NULL;
+	return 0;
+}
+
+int array_deinit(dynamic_int_array *arr)
+{
+	arr->size = 0;
+	arr->capacity = 256;
+	if (arr->buff_heap)
+		free(arr->buff_heap);
+	arr->buff_heap=NULL;
+	return 0;
+}
+
+int array_set(dynamic_int_array *arr,int index,int value)
+{
+	//需要重新分配堆内存
+	if (index>=arr->capacity)
+	{
+		int *old_buff_heap = arr->buff_heap;
+		int old_capacity = arr->capacity;
+		arr->capacity = (index+1) * 2;
+		//memeory
+		arr->buff_heap = (int*)malloc(sizeof(int) * arr->capacity);
+		//clear memory
+		memset(arr->buff_heap,0,sizeof(int) * arr->capacity);
+		//之前用的是堆内存，拷贝后释放
+		if (old_buff_heap)
+		{
+			memcpy(arr->buff_heap,old_buff_heap,sizeof(int) * old_capacity);
+			free(old_buff_heap);
+		}
+		else//之前用的是栈内存，只需要拷贝
+		{
+			memcpy(arr->buff_heap,arr->buff_stack,sizeof(int) * old_capacity);
+		}
+	}
+	if (index >= arr->size)
+	{
+		arr->size++;
+	}
+	if (arr->buff_heap)
+		arr->buff_heap[index] = value;
+	else
+		arr->buff_stack[index] = value;
+	return 0;
+}
+int array_get(dynamic_int_array *arr,int index,int *value)
+{
+	//out of range.
+	if (index >= arr->size)
+		return -1;
+	if (arr->buff_heap)
+		*value = arr->buff_heap[index];
+	else
+		*value = arr->buff_stack[index];
+}
+int array_remove(dynamic_int_array *arr,int index,int *value)
+{
+	//out of range.
+	if (index >= arr->size)
+		return -1;
+	//remove and shift
+	if (arr->buff_heap)
+	{
+		if(value)
+			*value = arr->buff_heap[index];
+		//删除的不是最后一个，需要移动；否则删除的是最后一个，不需要移动
+		if (index < arr->size-1)
+		{
+			memcpy(&arr->buff_heap[index],&arr->buff_heap[index+1],sizeof(int)*(arr->size-1 - index));
+		}
+	}
+	else
+	{
+		if(value)
+			*value = arr->buff_stack[index];
+		//删除的不是最后一个，需要移动；否则删除的是最后一个，不需要移动
+		if (index < arr->size-1)
+		{
+			memcpy(&arr->buff_stack[index],&arr->buff_stack[index+1],sizeof(int)*(arr->size-1 - index));
+		}
+	}
+	arr->size--;
+	return 0;
+}
+
+
+
 // hash node of hash table
 struct hash_node
 {
@@ -20,6 +134,7 @@ struct hash_table
 	int element_num;//有效元素大小
 	float load_factor_percent;
 	hash_node *hn;
+	dynamic_int_array different_hash_array;
 };
 int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos=-1);
 hash_node* create_hash_node()
@@ -60,6 +175,7 @@ hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_
 	ht->element_num = 0;
 	memset(ht->hn,0,sizeof(hash_node)*initial_size);
 
+	array_init(&ht->different_hash_array);
 	return ht;
 }
 
@@ -279,7 +395,7 @@ int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 
 
 //find 是用key来查找 findpos_output是查找成功和查找失败时的当前索引。shift_endpos_output是backshift删除时需要移动数据块的索引。
-//将来需要移动 findpos_output ~ shift_endpos_output 之间的数据块
+//将来需要移动 findpos_output ~ shift_endpos_output 之间[findpos_output,shift_endpos_output)的数据块,shift_endpos_output则设置为空
 int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_output=NULL,int *shift_endpos_output=NULL)
 {
 	int find_result = -1;
@@ -320,7 +436,7 @@ int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_
 
 	//-1：表示不存在，那么findpos_output是有意义的，shift_endpos_output是无意义的
 	//不为-1：表示存在，要找到需要被shift的结尾的位置 findpos_output是有意义的，shift_endpos_output是有意义的
-	//不是每次删除都要执行back_shift，而是当dib大于某个值，比如5 的时候，才需要shift，防止
+	//TODO:不是每次删除都要执行back_shift，而是当dib大于某个值，比如5 的时候，才需要shift，看能否实现这个？
 	if(find_result != -1)
 	{
 		//需要find_result2是需要shiftback的结束的索引
@@ -337,6 +453,77 @@ int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_
 			if ( (find_result2!=find_result) &&  (dib == 0) )
 				break;
 			
+			if (shift_endpos_output)
+				*shift_endpos_output = find_result2;
+			find_result2++;
+			find_result2 %= size;
+		}
+	}
+	return find_result;
+}
+
+//find 是用key来查找 findpos_output是查找成功和查找失败时的当前索引。shift_endpos_output是backshift删除时需要移动数据块的索引。
+//将来需要移动 findpos_output ~ shift_endpos_output 之间[findpos_output,shift_endpos_output)的数据块,shift_endpos_output则设置为空
+//
+int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *findpos_output=NULL,int *shift_endpos_output=NULL)
+{
+	int find_result = -1;
+	int size = ht->capacity;
+	int hash_value = hash_function(key,size);
+	int table_pos = hash_value;
+	int find_len = 0;
+
+	ht->different_hash_array
+
+	while(true)
+	{
+		int dib = (table_pos + size - hash_value & 0x7FFFFFFFU)%size;
+		//empty
+		if (ht->hn[table_pos].hash_value == 0)
+		{	
+			if (findpos_output)
+				*findpos_output = table_pos;
+			find_result = -1;
+			break;
+		}//当dib突然变得小于起始点应有的dib的时候，说明已经是其他值的部分了
+		else if (dib < find_len)
+		{
+			if (findpos_output)
+				*findpos_output = table_pos;
+			find_result = -1;
+			break;
+		}
+		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)
+		{
+			if (findpos_output)
+				*findpos_output = table_pos;
+			find_result =  table_pos;
+			break;
+		}
+		table_pos++;
+		table_pos %= size;
+		find_len++;
+	}
+
+	//-1：表示不存在，那么findpos_output是有意义的，shift_endpos_output是无意义的
+	//不为-1：表示存在，要找到需要被shift的结尾的位置 findpos_output是有意义的，shift_endpos_output是有意义的
+	//TODO:不是每次删除都要执行back_shift，而是当dib大于某个值，比如5 的时候，才需要shift，看能否实现这个？
+	if(find_result != -1)
+	{
+		//需要find_result2是需要shiftback的结束的索引
+		int find_result2 = find_result;
+		if (shift_endpos_output)
+			*shift_endpos_output = find_result2;
+		while (true)
+		{
+			//empty
+			if (ht->hn[find_result2].hash_value == 0)
+				break;
+			//dib == 0,有可能find_result就是dib为0的，要判断后面的
+			int dib = (find_result2 + size - ht->hn[find_result2].hash_value & 0x7FFFFFFF) % size;
+			if ( (find_result2!=find_result) &&  (dib == 0) )
+				break;
+
 			if (shift_endpos_output)
 				*shift_endpos_output = find_result2;
 			find_result2++;
@@ -404,6 +591,16 @@ int rhht_remove_all(hash_table *ht,int key)
 	{
 		removed_num++;
 	}
+	return removed_num;
+}
+
+int rhht_remove_all2(hash_table *ht,int key)
+{
+	int removed_num = 0;
+	//清空
+	array_deinit(&ht->different_hash_array);
+	int pos =  __rhht_find_helper_for_backshift_remove_all(ht,key);
+	pos != -1;
 	return removed_num;
 }
 

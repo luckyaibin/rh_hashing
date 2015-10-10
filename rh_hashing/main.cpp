@@ -273,9 +273,11 @@ int test5()
 	return 0;
 }
 void test6(hash_table*);
+
+void test_dynamic_array();
 int main()
 {
-	test1();
+	test_dynamic_array();
 	//hash_table * ht = create_hash_table(100);
 	//test6(ht);
 	IntHashMapType imt;
@@ -291,6 +293,27 @@ int main()
 	}
 
 	return 0;
+}
+
+void test_dynamic_array()
+{
+	dynamic_int_array arr;
+	array_init(&arr);
+
+	for (int i=0;i<100;i++)
+	{
+		array_set(&arr,i,i*10);
+		//dump_array(&arr);
+	}
+	dump_array(&arr);
+	for (int i=0;i<100;i++)
+	{
+		array_remove(&arr,5,NULL);
+		dump_array(&arr);
+	}
+	dump_array(&arr);
+
+	array_deinit(&arr);
 }
 
 void test6(hash_table *ht)
