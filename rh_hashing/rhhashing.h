@@ -21,7 +21,7 @@ struct hash_table
 	float load_factor_percent;
 	hash_node *hn;
 };
-int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos=0);
+int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos=-1);
 hash_node* create_hash_node()
 {
 	hash_node* hn = new hash_node;
@@ -145,8 +145,11 @@ int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_inst
 	int inserted_hash_value = hash_function(key,size);
 	int table_pos = inserted_hash_value;
 	//重新分配了大小的话，启发式的start_table_pos就不能用了，失效了
-	if ((!is_increased) && start_table_pos_instinct)
+	if ((!is_increased) && (-1!=start_table_pos_instinct))
+	{
 		table_pos = start_table_pos_instinct;
+		//printf("start_table_pos_instinct: %d ,save steps: %d \n",start_table_pos_instinct,start_table_pos_instinct-inserted_hash_value);
+	}
 	while (true)
 	{
 		table_pos = table_pos % size;
@@ -201,7 +204,7 @@ int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_inst
 
 
 //find 是用key来查找
-int __rhht_find_helper(hash_table *ht,int key,int *endpos_output=NULL)
+int __rhht_find_helper(hash_table *ht,int key,int *insertpos_output=NULL)
 {
 	int size = ht->capacity;
 	int hash_value = hash_function(key,size);
@@ -213,22 +216,23 @@ int __rhht_find_helper(hash_table *ht,int key,int *endpos_output=NULL)
 		//empty
 		if (ht->hn[table_pos].hash_value == 0)
 		{	
-			if (endpos_output)
-				*endpos_output = table_pos;
 			return -1;
 		}//当dib突然变得小于起始点应有的dib的时候，说明已经是其他值的部分了
-		else if (dib < find_len)
+		if (dib < find_len)
 		{
-			if (endpos_output)
-				*endpos_output = table_pos;
 			return -1;
 		}
-		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)
+		if (ht->hn[table_pos].hash_value == hash_value)
 		{
-			if (endpos_output)
-				*endpos_output = table_pos;
-			return table_pos;
+			//记录第一个hash_value等于需要查找值的hash的位置，可以加快插入
+			if (insertpos_output && (*insertpos_output == -1) )
+				*insertpos_output = table_pos;
+			if (ht->hn[table_pos].key == key)
+			{
+				return table_pos;
+			}
 		}
+		
 		table_pos++;
 		table_pos %= size;
 		find_len++;
@@ -243,8 +247,8 @@ int rhht_multi_insert(hash_table *ht,int key,int value)
 //同一个值只存在一个,且不覆盖之前的值
 int rhht_unique_insert(hash_table *ht,int key,int value)
 {
-	int endpos = 0;
-	int index = __rhht_find_helper(ht,key,NULL);
+	int endpos = -1;
+	int index = __rhht_find_helper(ht,key,&endpos);
 	//不存在才插入，根据返回的endpos可以加快插入的速度
 	if (index==-1)
 	{
@@ -256,8 +260,8 @@ int rhht_unique_insert(hash_table *ht,int key,int value)
 //同一个值只存在一个,且覆盖之前存在的值
 int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 {
-	int endpos = 0;
-	int index = __rhht_find_helper(ht,key,NULL);
+	int endpos = -1;
+	int index = __rhht_find_helper(ht,key,&endpos);
 	//不存在才插入，根据返回的endpos可以加快插入的速度
 	if (index==-1)
 	{

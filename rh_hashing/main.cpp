@@ -81,13 +81,14 @@ int test2()
 	{
 		key =  GetTickCount() % 200;
 		int value = key * 10;
-		//rhht_unique_overwrite_insert(ht,key,value);
+		rhht_unique_overwrite_insert(ht,key,value);
 		//imt.insert(make_pair(key,value));
 		//duplicate(ht,&ht_before_insert);
-		rhht_unique_insert(ht,key,value);
+		//rhht_unique_insert(ht,key,value);
 		//duplicate(ht,&ht_before_remove);
 		//printf("rhht_unique_insert(ht,%d,%d) \n",key,value);
-		imt.insert(make_pair(key,value));
+		//imt.insert(make_pair(key,value));
+		imt[key] = value;
 		::Sleep(1);
 		int cnt = GetTickCount();
 		if (cnt % 3 == 0)
@@ -113,9 +114,9 @@ int test2()
 			IntHashMapType::iterator it = imt.find(key);
 			if (it == imt.end())
 			{
-				dump_hash_table(ht_before_insert);
-				dump_hash_table(ht_before_remove);
-				dump_hash_table(ht_after_remove);
+				//dump_hash_table(ht_before_insert);
+				//dump_hash_table(ht_before_remove);
+				//dump_hash_table(ht_after_remove);
 
 				dump_hash_table(ht);
 				printf("error occurred.%d,%d,hash_value:%d,index:%d,总大小:%d\n",key,value,ht->hn[i].hash_value,i,ht->capacity);
@@ -269,7 +270,6 @@ start:
 
 int test5()
 {
-
 	return 0;
 }
 void test6(hash_table*);
