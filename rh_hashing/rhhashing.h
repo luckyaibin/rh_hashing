@@ -278,13 +278,13 @@ int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 //将来需要移动 findpos_output ~ shift_endpos_output 之间的数据块
 int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_output=NULL,int *shift_endpos_output=NULL)
 {
-	int find_result = 0;
+	int find_result = -1;
 	int size = ht->capacity;
 	int hash_value = hash_function(key,size);
 	int table_pos = hash_value;
 	int find_len = 0;
 	
-	while(0 == find_result)
+	while(true)
 	{
 		int dib = (table_pos + size - hash_value & 0x7FFFFFFFU)%size;
 		//empty
@@ -293,18 +293,21 @@ int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_
 			if (findpos_output)
 				*findpos_output = table_pos;
 			find_result = -1;
+			break;
 		}//当dib突然变得小于起始点应有的dib的时候，说明已经是其他值的部分了
 		else if (dib < find_len)
 		{
 			if (findpos_output)
 				*findpos_output = table_pos;
 			find_result = -1;
+			break;
 		}
 		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)
 		{
 			if (findpos_output)
 				*findpos_output = table_pos;
 			find_result =  table_pos;
+			break;
 		}
 		table_pos++;
 		table_pos %= size;
