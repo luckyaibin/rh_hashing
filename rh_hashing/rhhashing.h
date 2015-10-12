@@ -134,7 +134,7 @@ struct hash_table
 	int element_num;//有效元素大小
 	float load_factor_percent;
 	hash_node *hn;
-	dynamic_int_array different_hash_array;
+	dynamic_int_array different_hash_array;//记录下来需要shift的不同hash值的起始index，加快shift操作
 };
 int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos=-1);
 hash_node* create_hash_node()
@@ -177,6 +177,16 @@ hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_
 
 	array_init(&ht->different_hash_array);
 	return ht;
+}
+
+int get_hash(hash_table* ht,int index)
+{
+	return ht->hn[index].hash_value & 0x7FFFFFFF;
+}
+
+int get_dib(hash_table* ht,int index)
+{
+
 }
 
 //增加大小到原来的factor倍，默认为2
@@ -473,7 +483,7 @@ int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *find
 	int table_pos = hash_value;
 	int find_len = 0;
 
-	ht->different_hash_array
+	
 
 	while(true)
 	{
@@ -505,6 +515,10 @@ int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *find
 		find_len++;
 	}
 
+	//标记是否找到了一个hash值的起始索引
+	int curr_hash = 0;
+	int curr_hash_begin_index = -1;
+	int curr_hash_end_index = -1;
 	//-1：表示不存在，那么findpos_output是有意义的，shift_endpos_output是无意义的
 	//不为-1：表示存在，要找到需要被shift的结尾的位置 findpos_output是有意义的，shift_endpos_output是有意义的
 	//TODO:不是每次删除都要执行back_shift，而是当dib大于某个值，比如5 的时候，才需要shift，看能否实现这个？
@@ -514,6 +528,14 @@ int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *find
 		int find_result2 = find_result;
 		if (shift_endpos_output)
 			*shift_endpos_output = find_result2;
+		
+		curr_hash = ht->hn[find_result2].hash_value & 0x7FFFFFFF;
+		if(curr_hash == ht->hn[find_result2].hash_value & 0x7FFFFFFF)
+		{
+			//把索引存起来
+			array_set(&ht->different_hash_array,ht->different_hash_array.size,find_result2);
+		}
+		
 		while (true)
 		{
 			//empty
@@ -526,6 +548,22 @@ int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *find
 
 			if (shift_endpos_output)
 				*shift_endpos_output = find_result2;
+
+			//保存某个hash值的结束index
+			if(curr_hash == ht->hn[find_result2].hash_value & 0x7FFFFFFF)
+			{	
+				//使用size-1是为了更新索引
+				array_set(&ht->different_hash_array,ht->different_hash_array.size-1,find_result2);
+			}
+			else
+			{
+				//使用size是为了添加新索引
+				array_set(&ht->different_hash_array,ht->different_hash_array.size,find_result2);
+				//更新当前hash值
+				curr_hash = ht->hn[find_result2].hash_value & 0x7FFFFFFF;
+			}
+			
+
 			find_result2++;
 			find_result2 %= size;
 		}
