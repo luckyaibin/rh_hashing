@@ -179,14 +179,44 @@ hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_
 	return ht;
 }
 
+//把 [start,end] 向左移动count个格子（覆盖start - count ~ start 之前的值
+//[end - count，end]之间的清空
+int __shift(hash_table* ht,int start,int end,int count)
+{
+	if (count<=0)
+	{
+		return -1;
+	}
+	if (start <= end)
+	{
+		int bytes = sizeof(ht->hn[0]) * count;
+		memmove(&ht->hn[start] - bytes,&ht->hn[start],bytes);
+		//清空
+		memset(&ht->hn[end] - bytes,bytes,0);
+	}
+	else//绕过了结尾
+	{
+		int bytes = sizeof(ht->hn[0]) * (ht->capacity - start);
+		memmove(&ht->hn[start] - bytes,&ht->hn[start],bytes);
+
+		bytes = 
+		memmove(&ht->hn[ht->capacity ,&ht-hn[0]
+	}
+	
+
+	return 0;
+}
+
 int get_hash(hash_table* ht,int index)
 {
-	return ht->hn[index].hash_value & 0x7FFFFFFF;
+	int hash_value = ht->hn[index].hash_value & 0x7FFFFFFF;
+	return hash_value;
 }
 
 int get_dib(hash_table* ht,int index)
 {
-
+	int dib = (index + ht->capacity + ht->hn[index].hash_value & 0x7FFFFFFF  ) % ht->capacity;
+	return dib;
 }
 
 //增加大小到原来的factor倍，默认为2
@@ -549,13 +579,13 @@ int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *find
 			if (shift_endpos_output)
 				*shift_endpos_output = find_result2;
 
-			//保存某个hash值的结束index
+			//更新某个hash值的结束index
 			if(curr_hash == ht->hn[find_result2].hash_value & 0x7FFFFFFF)
 			{	
 				//使用size-1是为了更新索引
 				array_set(&ht->different_hash_array,ht->different_hash_array.size-1,find_result2);
 			}
-			else
+			else//添加某个hash值的index，用于更新
 			{
 				//使用size是为了添加新索引
 				array_set(&ht->different_hash_array,ht->different_hash_array.size,find_result2);
@@ -637,8 +667,13 @@ int rhht_remove_all2(hash_table *ht,int key)
 	int removed_num = 0;
 	//清空
 	array_deinit(&ht->different_hash_array);
-	int pos =  __rhht_find_helper_for_backshift_remove_all(ht,key);
-	pos != -1;
+
+	int shift_start,shift_end;
+	int pos =  __rhht_find_helper_for_backshift_remove_all(ht,key,&shift_start,&shift_end);
+	if(pos != -1)
+	{
+		//循环向前移动
+	}
 	return removed_num;
 }
 
