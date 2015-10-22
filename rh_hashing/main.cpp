@@ -31,7 +31,7 @@ int test1()
 start:
 	unsigned long curr_t = GetTickCount();
 	for(int times  = 0;times<10;times++)
-		for (int i=0;i<2500;i++)
+		for (int i=0;i<25000;i++)
 		{
 			int key = arry[i];
 			int value = key * 10;			 
@@ -47,7 +47,7 @@ start:
 
 	curr_t = GetTickCount();
 	for(int times  = 0;times<10;times++)
-		for (int i=0;i<2500;i++)
+		for (int i=0;i<25000;i++)
 		{
 			int key = arry[i];
 			int value = key * 10;
@@ -89,7 +89,7 @@ int test2()
 		//printf("rhht_unique_insert(ht,%d,%d) \n",key,value);
 		//imt.insert(make_pair(key,value));
 		imt[key] = value;
-		::Sleep(1);
+		//::Sleep(1);
 		int cnt = GetTickCount();
 		if (cnt % 3 == 0)
 		{
@@ -103,7 +103,7 @@ int test2()
 	
 	}
 
-	//printf("my rh size is : %d,map size is :%d\n",ht->element_num,imt.size());
+	printf("my rh size is : %d,map size is :%d\n",ht->element_num,imt.size());
 
 	for (int i=0;i<ht->capacity;i++)
 	{
@@ -272,12 +272,15 @@ int test5()
 {
 	return 0;
 }
+
+ 
 void test6(hash_table*);
 
 void test_dynamic_array();
 int main()
-{
-	test_dynamic_array();
+{	
+	test1();
+	//test_dynamic_array();
 	//hash_table * ht = create_hash_table(100);
 	//test6(ht);
 	IntHashMapType imt;
