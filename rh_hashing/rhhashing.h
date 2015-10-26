@@ -1,4 +1,4 @@
-#ifndef __ROBIN_HASHING_H__
+ï»¿#ifndef __ROBIN_HASHING_H__
 #define __ROBIN_HASHING_H__
 #include <memory.h>
 #include <stdio.h>
@@ -10,119 +10,6 @@
 #define min(a,b) ((a)<=(b)?a:b)
 #endif
 
-struct dynamic_int_array
-{
-	int size;
-	int capacity;
-	int buff_stack[256];
-	int *buff_heap;
-};
-
-void dump_array(dynamic_int_array* arr)
-{
-	for (int i=0;i<arr->size;i++)
-	{
-		if (arr->buff_heap)
-			printf("%d	",arr->buff_heap[i]);
-		else
-			printf("%d	",arr->buff_stack[i]);		
-	}
-	printf("\n\n\n");
-}
-
-int array_init(dynamic_int_array *arr)
-{
-	arr->size = 0;
-	arr->capacity = 256;
-	arr->buff_heap=NULL;
-	return 0;
-}
-
-int array_deinit(dynamic_int_array *arr)
-{
-	arr->size = 0;
-	arr->capacity = 256;
-	if (arr->buff_heap)
-		free(arr->buff_heap);
-	arr->buff_heap=NULL;
-	return 0;
-}
-
-int array_set(dynamic_int_array *arr,int index,int value)
-{
-	//ĞèÒªÖØĞÂ·ÖÅä¶ÑÄÚ´æ
-	if (index>=arr->capacity)
-	{
-		int *old_buff_heap = arr->buff_heap;
-		int old_capacity = arr->capacity;
-		arr->capacity = (index+1) * 2;
-		//memeory
-		arr->buff_heap = (int*)malloc(sizeof(int) * arr->capacity);
-		//clear memory
-		memset(arr->buff_heap,0,sizeof(int) * arr->capacity);
-		//Ö®Ç°ÓÃµÄÊÇ¶ÑÄÚ´æ£¬¿½±´ºóÊÍ·Å
-		if (old_buff_heap)
-		{
-			memcpy(arr->buff_heap,old_buff_heap,sizeof(int) * old_capacity);
-			free(old_buff_heap);
-		}
-		else//Ö®Ç°ÓÃµÄÊÇÕ»ÄÚ´æ£¬Ö»ĞèÒª¿½±´
-		{
-			memcpy(arr->buff_heap,arr->buff_stack,sizeof(int) * old_capacity);
-		}
-	}
-	if (index >= arr->size)
-	{
-		arr->size++;
-	}
-	if (arr->buff_heap)
-		arr->buff_heap[index] = value;
-	else
-		arr->buff_stack[index] = value;
-	return 0;
-}
-int array_get(dynamic_int_array *arr,int index,int *value)
-{
-	//out of range.
-	if (index >= arr->size)
-		return -1;
-	if (arr->buff_heap)
-		*value = arr->buff_heap[index];
-	else
-		*value = arr->buff_stack[index];
-}
-int array_remove(dynamic_int_array *arr,int index,int *value)
-{
-	//out of range.
-	if (index >= arr->size)
-		return -1;
-	//remove and shift
-	if (arr->buff_heap)
-	{
-		if(value)
-			*value = arr->buff_heap[index];
-		//É¾³ıµÄ²»ÊÇ×îºóÒ»¸ö£¬ĞèÒªÒÆ¶¯£»·ñÔòÉ¾³ıµÄÊÇ×îºóÒ»¸ö£¬²»ĞèÒªÒÆ¶¯
-		if (index < arr->size-1)
-		{
-			memcpy(&arr->buff_heap[index],&arr->buff_heap[index+1],sizeof(int)*(arr->size-1 - index));
-		}
-	}
-	else
-	{
-		if(value)
-			*value = arr->buff_stack[index];
-		//É¾³ıµÄ²»ÊÇ×îºóÒ»¸ö£¬ĞèÒªÒÆ¶¯£»·ñÔòÉ¾³ıµÄÊÇ×îºóÒ»¸ö£¬²»ĞèÒªÒÆ¶¯
-		if (index < arr->size-1)
-		{
-			memcpy(&arr->buff_stack[index],&arr->buff_stack[index+1],sizeof(int)*(arr->size-1 - index));
-		}
-	}
-	arr->size--;
-	return 0;
-}
-
-
-
 // hash node of hash table
 struct hash_node
 {
@@ -133,34 +20,17 @@ struct hash_node
 
 struct hash_table
 {
-	int capacity;		//hashtableµÄbucket´óĞ¡
-	int treshold;		//ãĞÖµ´óĞ¡£¬ÊÇ¸ù¾İload_factor_percent * capacity¼ÆËã³öÀ´µÄ
-	int element_num;//ÓĞĞ§ÔªËØ´óĞ¡
+	int capacity;		//hashtableçš„bucketå¤§å°
+	int treshold;		//é˜ˆå€¼å¤§å°ï¼Œæ˜¯æ ¹æ®load_factor_percent * capacityè®¡ç®—å‡ºæ¥çš„
+	int element_num;//æœ‰æ•ˆå…ƒç´ å¤§å°
 	float load_factor_percent;
 	hash_node *hn;
-	dynamic_int_array different_hash_array;//¼ÇÂ¼ÏÂÀ´ĞèÒªshiftµÄ²»Í¬hashÖµµÄÆğÊ¼index£¬¼Ó¿ìshift²Ù×÷
 };
-int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos=-1);
+int __rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos=-1);
 hash_node* create_hash_node()
 {
 	hash_node* hn = new hash_node;
 	return hn;
-}
-
-inline void duplicate(hash_table* ht,hash_table** dest_ht)
-{
-	if (*dest_ht)
-	{
-		//free((*dest_ht)->hn);
-		//free(*dest_ht);
-	}
-	hash_table *ht2 = (hash_table*)malloc(sizeof(hash_table));
-	ht2->hn = (hash_node*)malloc(ht->capacity*sizeof(hash_node));
-
-	memcpy(ht2,ht,sizeof(hash_table));
-	memcpy(&ht2->hn[0],&ht->hn[0],ht->capacity*sizeof(hash_node));
-
-	*dest_ht = ht2;
 }
 
 hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_percent=0.9f )
@@ -169,7 +39,7 @@ hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_
 	ht->capacity = initial_size;
 	ht->load_factor_percent = load_factor_percent;
 	ht->treshold = int(ht->capacity * ht->load_factor_percent);
-	//ÖÁÉÙÓĞÒ»¸ö¿ÕÎ»
+	//è‡³å°‘æœ‰ä¸€ä¸ªç©ºä½
 	if (ht->capacity - ht->treshold < 1)
 	{
 		ht->treshold = ht->capacity - 1;
@@ -178,13 +48,11 @@ hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_
 	ht->hn = (hash_node *)malloc(sizeof(hash_node) * initial_size);
 	ht->element_num = 0;
 	memset(ht->hn,0,sizeof(hash_node)*initial_size);
-
-	array_init(&ht->different_hash_array);
 	return ht;
 }
 
-//°Ñ [start,end] Ïò×óÒÆ¶¯count¸ö¸ñ×Ó£¨¸²¸Çstart - count ~ start Ö®Ç°µÄÖµ
-//[end - count£¬end]Ö®¼äµÄÇå¿Õ
+//æŠŠ [start,end] å‘å·¦ç§»åŠ¨countä¸ªæ ¼å­ï¼ˆè¦†ç›–start - count ~ start ä¹‹å‰çš„å€¼
+//[end - countï¼Œend]ä¹‹é—´çš„æ¸…ç©º
 int __shift(hash_table* ht,int start_index,int end_index,int shift_count)
 {
 	int size = ht->capacity;
@@ -196,7 +64,7 @@ int __shift(hash_table* ht,int start_index,int end_index,int shift_count)
 	int data_count = ( end_index + size - start_index + 1)%size;
 	for (int i=0;i<shift_count;i++)
 	{
-		//°Ñ×îºóµÄÒÆ¶¯µ½ÆğÊ¼ÔªËØÖ®Ç°£¬Ïàµ±ÓÚshiftÁË1
+		//æŠŠæœ€åçš„ç§»åŠ¨åˆ°èµ·å§‹å…ƒç´ ä¹‹å‰ï¼Œç›¸å½“äºshiftäº†1
 		int to_index = (start_index + size - i - 1)%size;
 		int from_index = (end_index + size - i)%size;
 
@@ -219,15 +87,15 @@ int get_dib(hash_table* ht,int index)
 	return dib;
 }
 
-//Ôö¼Ó´óĞ¡µ½Ô­À´µÄfactor±¶£¬Ä¬ÈÏÎª2
-int rhht_check_increase_to(hash_table *ht,float increase_factor = 1.50f)
+//å¢åŠ å¤§å°åˆ°åŸæ¥çš„factorå€ï¼Œé»˜è®¤ä¸º2
+int __rhht_check_increase_to(hash_table *ht,float increase_factor = 1.50f)
 {
-	//Ã»´ïµ½¼«ÏŞ´óĞ¡
+	//æ²¡è¾¾åˆ°æé™å¤§å°
 	if (ht->element_num < ht->treshold)
 	{
 		return 0;
 	}	
-	//ÖØĞÂ·ÖÅäÄÚ´æ
+	//é‡æ–°åˆ†é…å†…å­˜
 	int old_capacity = ht->capacity;
 	hash_node* old_hn   = ht->hn;
 
@@ -239,17 +107,17 @@ int rhht_check_increase_to(hash_table *ht,float increase_factor = 1.50f)
 	ht->capacity = new_capacity;
 	ht->treshold = int(ht->capacity * ht->load_factor_percent);
 	printf("increased from %d to %d \n",old_capacity,new_capacity);
-	//ÖÁÉÙÓĞÒ»¸ö¿ÕÎ»£¬±£Ö¤ÖÁÉÙÄÜ¹»³É¹¦ÔÚ²åÈë£¬²Ù×÷Ö®ºó²Å¿ÉÒÔÔö¼Ócapacity
+	//è‡³å°‘æœ‰ä¸€ä¸ªç©ºä½ï¼Œä¿è¯è‡³å°‘èƒ½å¤ŸæˆåŠŸåœ¨æ’å…¥ï¼Œæ“ä½œä¹‹åæ‰å¯ä»¥å¢åŠ capacity
 	if (ht->capacity - ht->treshold < 1)
 	{
 		ht->treshold = ht->capacity - 1;
 	}
-	//¿½±´Ô­À´µÄÖµ
+	//æ‹·è´åŸæ¥çš„å€¼
 	for (int i=0;i<old_capacity;i++)
 	{
 		if (old_hn[i].hash_value > 0)
 		{
-			rhht_insert_helper(ht,old_hn[i].key,old_hn[i].value);
+			__rhht_insert_helper(ht,old_hn[i].key,old_hn[i].value);
 		}
 	}
 	free(old_hn);
@@ -260,13 +128,13 @@ inline int hash_function(int v,int hash_size)
 {
 	v = v + (v << 5);
 	v = v % hash_size;
-	v |= v==0;//²»·µ»ØhashÖµ0
+	v |= v==0;//ä¸è¿”å›hashå€¼0
 	return v;
 }
 //inline int hash_function(int v,int hash_size)
 //{
 //	v = v % hash_size;
-//	v |= v==0;//²»·µ»ØhashÖµ0
+//	v |= v==0;//ä¸è¿”å›hashå€¼0
 //	return v;
 //}
 void dump_hash_table(hash_table * ht)
@@ -289,14 +157,14 @@ void dump_hash_table(hash_table * ht)
 	printf("\n\n");
 }
 
-//start_table_posÆğÊ¼²éÕÒË÷Òı
-int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_instinct)
+//start_table_posèµ·å§‹æŸ¥æ‰¾ç´¢å¼•
+int __rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_instinct)
 {
-	int is_increased = rhht_check_increase_to(ht);
+	int is_increased = __rhht_check_increase_to(ht);
 	int size = ht->capacity;
 	int inserted_hash_value = hash_function(key,size);
 	int table_pos = inserted_hash_value;
-	//ÖØĞÂ·ÖÅäÁË´óĞ¡µÄ»°£¬Æô·¢Ê½µÄstart_table_pos¾Í²»ÄÜÓÃÁË£¬Ê§Ğ§ÁË
+	//é‡æ–°åˆ†é…äº†å¤§å°çš„è¯ï¼Œå¯å‘å¼çš„start_table_poså°±ä¸èƒ½ç”¨äº†ï¼Œå¤±æ•ˆäº†
 	if ((!is_increased) && (-1!=start_table_pos_instinct))
 	{
 		table_pos = start_table_pos_instinct;
@@ -306,7 +174,7 @@ int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_inst
 	{
 		table_pos = table_pos % size;
 		int table_hash = ht->hn[table_pos].hash_value;
-		//Ã»ÓĞÔªËØ
+		//æ²¡æœ‰å…ƒç´ 
 		//empty
 		if (table_hash == 0)
 		{
@@ -316,18 +184,18 @@ int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_inst
 			ht->element_num++;
 			return table_pos;
 		}
-		//×¢Òâ£¡£¡£¡ÏÂÃæÁ½´¦Ö®ËùÒÔÒªtable_pos + size - table_hash £¬¼ÓÉÏsize£¬ÊÇÎªÁË±£Ö¤µ±»Ø»·µ½ÆğÊ¼µãµÄÊ±ºò¼ÆËãµÃµ½µÄÖµÈÔÈ»ÊÇÕıÈ·µÄ£¬·ñÔò¿ÉÄÜ³öÏÖ¸ºÖµ
-		//ÓĞÔªËØ
-		//table_posÓÀÔ¶ÊÇ´óÓÚµÈÓÚtable_hashµÄ£¡ÒòÎªËùÓĞÔªËØ¶¼ÊÇÏòºó´íÎ»ÅÅÁĞµÄ
+		//æ³¨æ„ï¼ï¼ï¼ä¸‹é¢ä¸¤å¤„ä¹‹æ‰€ä»¥è¦table_pos + size - table_hash ï¼ŒåŠ ä¸Šsizeï¼Œæ˜¯ä¸ºäº†ä¿è¯å½“å›ç¯åˆ°èµ·å§‹ç‚¹çš„æ—¶å€™è®¡ç®—å¾—åˆ°çš„å€¼ä»ç„¶æ˜¯æ­£ç¡®çš„ï¼Œå¦åˆ™å¯èƒ½å‡ºç°è´Ÿå€¼
+		//æœ‰å…ƒç´ 
+		//table_posæ°¸è¿œæ˜¯å¤§äºç­‰äºtable_hashçš„ï¼å› ä¸ºæ‰€æœ‰å…ƒç´ éƒ½æ˜¯å‘åé”™ä½æ’åˆ—çš„
 		int table_dib = (table_pos + size - table_hash & 0x7FFFFFFFU)%size;
 
-		//table_posÔò²»Ò»¶¨´óÓÚ inserted_hash_value£¬Õı³£Çé¿öÏÂÊÇ´óÓÚµÄ£¬µ«ÊÇµ±´Óhash_table×îºó»Ø×ªµ½hash_tableÆğÊ¼µãÊ±ºò
-		//table_pos Ğ¡ÓÚinserted_hash_value
+		//table_posåˆ™ä¸ä¸€å®šå¤§äº inserted_hash_valueï¼Œæ­£å¸¸æƒ…å†µä¸‹æ˜¯å¤§äºçš„ï¼Œä½†æ˜¯å½“ä»hash_tableæœ€åå›è½¬åˆ°hash_tableèµ·å§‹ç‚¹æ—¶å€™
+		//table_pos å°äºinserted_hash_value
 		int inserted_dib = (table_pos  + size - (inserted_hash_value & 0x7FFFFFFFU) )%size;
-		//swap£¬Ïàµ±ÓÚ°ÑĞÂÔªËØnew_node²åÈëµ½µ±Ç°table_posµÄÎ»ÖÃ£¬Ïàµ±ÓÚ½»»»new_nodeºÍtable_posÉÏµÄold_node£¬È»ºó°Ñold_nodeÏòºóÅ²¶¯
+		//swapï¼Œç›¸å½“äºæŠŠæ–°å…ƒç´ new_nodeæ’å…¥åˆ°å½“å‰table_posçš„ä½ç½®ï¼Œç›¸å½“äºäº¤æ¢new_nodeå’Œtable_posä¸Šçš„old_nodeï¼Œç„¶åæŠŠold_nodeå‘åæŒªåŠ¨
 		if(table_dib < inserted_dib)
 		{
-			//deleted,²»ÄÜ·ÅÔÚÉÏÃæ
+			//deleted,ä¸èƒ½æ”¾åœ¨ä¸Šé¢
 			if (table_hash & 0x80000000)
 			{
 				ht->hn[table_pos].key = key;
@@ -336,16 +204,16 @@ int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_inst
 				ht->element_num++;
 				return table_pos;
 			}
-			//±£´æ±»²åÈëÎ»ÖÃµÄÔ­Ê¼Öµ
+			//ä¿å­˜è¢«æ’å…¥ä½ç½®çš„åŸå§‹å€¼
 			hash_node tmp_hash_node = ht->hn[table_pos];
 		
-			//²åÈëµ½±íÖĞ
+			//æ’å…¥åˆ°è¡¨ä¸­
 			ht->hn[table_pos].hash_value = inserted_hash_value;
 			ht->hn[table_pos].key		 = key;
 			ht->hn[table_pos].value		 = value;
 
-			//°Ñ±íÖĞµÄÖµ±ä³ÉĞèÒª²åÈëµÄÖµ
-			//½áµã±ä³ÉÁËĞÂµÄhashÖµ
+			//æŠŠè¡¨ä¸­çš„å€¼å˜æˆéœ€è¦æ’å…¥çš„å€¼
+			//ç»“ç‚¹å˜æˆäº†æ–°çš„hashå€¼
 			inserted_hash_value = tmp_hash_node.hash_value;
 			key = tmp_hash_node.key;
 			value = tmp_hash_node.value;
@@ -355,7 +223,7 @@ int rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_inst
 }
 
 
-//find ÊÇÓÃkeyÀ´²éÕÒ
+//find æ˜¯ç”¨keyæ¥æŸ¥æ‰¾
 int __rhht_find_helper(hash_table *ht,int key,int *insertpos_output=NULL)
 {
 	int size = ht->capacity;
@@ -369,14 +237,14 @@ int __rhht_find_helper(hash_table *ht,int key,int *insertpos_output=NULL)
 		if (ht->hn[table_pos].hash_value == 0)
 		{	
 			return -1;
-		}//µ±dibÍ»È»±äµÃĞ¡ÓÚÆğÊ¼µãÓ¦ÓĞµÄdibµÄÊ±ºò£¬ËµÃ÷ÒÑ¾­ÊÇÆäËûÖµµÄ²¿·ÖÁË
+		}//å½“dibçªç„¶å˜å¾—å°äºèµ·å§‹ç‚¹åº”æœ‰çš„dibçš„æ—¶å€™ï¼Œè¯´æ˜å·²ç»æ˜¯å…¶ä»–å€¼çš„éƒ¨åˆ†äº†
 		if (dib < find_len)
 		{
 			return -1;
 		}
 		if (ht->hn[table_pos].hash_value == hash_value)
 		{
-			//¼ÇÂ¼µÚÒ»¸öhash_valueµÈÓÚĞèÒª²éÕÒÖµµÄhashµÄÎ»ÖÃ£¬¿ÉÒÔ¼Ó¿ì²åÈë
+			//è®°å½•ç¬¬ä¸€ä¸ªhash_valueç­‰äºéœ€è¦æŸ¥æ‰¾å€¼çš„hashçš„ä½ç½®ï¼Œå¯ä»¥åŠ å¿«æ’å…¥
 			if (insertpos_output && (*insertpos_output == -1) )
 				*insertpos_output = table_pos;
 			if (ht->hn[table_pos].key == key)
@@ -393,33 +261,33 @@ int __rhht_find_helper(hash_table *ht,int key,int *insertpos_output=NULL)
 
 int rhht_multi_insert(hash_table *ht,int key,int value)
 {
-	return rhht_insert_helper(ht,key,value);
+	return __rhht_insert_helper(ht,key,value);
 }
 
-//Í¬Ò»¸öÖµÖ»´æÔÚÒ»¸ö,ÇÒ²»¸²¸ÇÖ®Ç°µÄÖµ
+//åŒä¸€ä¸ªå€¼åªå­˜åœ¨ä¸€ä¸ª,ä¸”ä¸è¦†ç›–ä¹‹å‰çš„å€¼
 int rhht_unique_insert(hash_table *ht,int key,int value)
 {
 	int endpos = -1;
 	int index = __rhht_find_helper(ht,key,&endpos);
-	//²»´æÔÚ²Å²åÈë£¬¸ù¾İ·µ»ØµÄendpos¿ÉÒÔ¼Ó¿ì²åÈëµÄËÙ¶È
+	//ä¸å­˜åœ¨æ‰æ’å…¥ï¼Œæ ¹æ®è¿”å›çš„endposå¯ä»¥åŠ å¿«æ’å…¥çš„é€Ÿåº¦
 	if (index==-1)
 	{
-		index = rhht_insert_helper(ht,key,value,endpos);
+		index = __rhht_insert_helper(ht,key,value,endpos);
 	}
 	return index;
 }
 
-//Í¬Ò»¸öÖµÖ»´æÔÚÒ»¸ö,ÇÒ¸²¸ÇÖ®Ç°´æÔÚµÄÖµ
+//åŒä¸€ä¸ªå€¼åªå­˜åœ¨ä¸€ä¸ª,ä¸”è¦†ç›–ä¹‹å‰å­˜åœ¨çš„å€¼
 int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 {
 	int endpos = -1;
 	int index = __rhht_find_helper(ht,key,&endpos);
-	//²»´æÔÚ²Å²åÈë£¬¸ù¾İ·µ»ØµÄendpos¿ÉÒÔ¼Ó¿ì²åÈëµÄËÙ¶È
+	//ä¸å­˜åœ¨æ‰æ’å…¥ï¼Œæ ¹æ®è¿”å›çš„endposå¯ä»¥åŠ å¿«æ’å…¥çš„é€Ÿåº¦
 	if (index==-1)
 	{
-		index = rhht_insert_helper(ht,key,value,endpos);
+		index = __rhht_insert_helper(ht,key,value,endpos);
 	}
-	//´æÔÚ£¬Ö±½Ó¸²¸Ç
+	//å­˜åœ¨ï¼Œç›´æ¥è¦†ç›–
 	else
 	{
 		ht->hn[index].key = key;
@@ -430,75 +298,9 @@ int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 
 
 
-//find ÊÇÓÃkeyÀ´²éÕÒ findpos_outputÊÇ²éÕÒ³É¹¦ºÍ²éÕÒÊ§°ÜÊ±µÄµ±Ç°Ë÷Òı¡£shift_endpos_outputÊÇbackshiftÉ¾³ıÊ±ĞèÒªÒÆ¶¯Êı¾İ¿éµÄË÷Òı¡£
-//½«À´ĞèÒªÒÆ¶¯ findpos_output ~ shift_endpos_output Ö®¼ä[findpos_output,shift_endpos_output)µÄÊı¾İ¿é,shift_endpos_outputÔòÉèÖÃÎª¿Õ
-int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_output=NULL,int *shift_endpos_output=NULL)
-{
-	int find_result = -1;
-	int size = ht->capacity;
-	int hash_value = hash_function(key,size);
-	int table_pos = hash_value;
-	int find_len = 0;
-	
-	while(true)
-	{
-		int dib = (table_pos + size - hash_value & 0x7FFFFFFFU)%size;
-		//empty
-		if (ht->hn[table_pos].hash_value == 0)
-		{	
-			if (findpos_output)
-				*findpos_output = table_pos;
-			find_result = -1;
-			break;
-		}//µ±dibÍ»È»±äµÃĞ¡ÓÚÆğÊ¼µãÓ¦ÓĞµÄdibµÄÊ±ºò£¬ËµÃ÷ÒÑ¾­ÊÇÆäËûÖµµÄ²¿·ÖÁË
-		else if (dib < find_len)
-		{
-			if (findpos_output)
-				*findpos_output = table_pos;
-			find_result = -1;
-			break;
-		}
-		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)
-		{
-			if (findpos_output)
-				*findpos_output = table_pos;
-			find_result =  table_pos;
-			break;
-		}
-		table_pos++;
-		table_pos %= size;
-		find_len++;
-	}
 
-	//-1£º±íÊ¾²»´æÔÚ£¬ÄÇÃ´findpos_outputÊÇÓĞÒâÒåµÄ£¬shift_endpos_outputÊÇÎŞÒâÒåµÄ
-	//²»Îª-1£º±íÊ¾´æÔÚ£¬ÒªÕÒµ½ĞèÒª±»shiftµÄ½áÎ²µÄÎ»ÖÃ findpos_outputÊÇÓĞÒâÒåµÄ£¬shift_endpos_outputÊÇÓĞÒâÒåµÄ
-	//TODO:²»ÊÇÃ¿´ÎÉ¾³ı¶¼ÒªÖ´ĞĞback_shift£¬¶øÊÇµ±dib´óÓÚÄ³¸öÖµ£¬±ÈÈç5 µÄÊ±ºò£¬²ÅĞèÒªshift£¬¿´ÄÜ·ñÊµÏÖÕâ¸ö£¿
-	if(find_result != -1)
-	{
-		//ĞèÒªfind_result2ÊÇĞèÒªshiftbackµÄ½áÊøµÄË÷Òı
-		int find_result2 = find_result;
-		if (shift_endpos_output)
-			*shift_endpos_output = find_result2;
-		while (true)
-		{
-			//empty
-			if (ht->hn[find_result2].hash_value == 0)
-				break;
-			//dib == 0,ÓĞ¿ÉÄÜfind_result¾ÍÊÇdibÎª0µÄ£¬ÒªÅĞ¶ÏºóÃæµÄ
-			int dib = (find_result2 + size - ht->hn[find_result2].hash_value & 0x7FFFFFFF) % size;
-			if ( (find_result2!=find_result) &&  (dib == 0) )
-				break;
-			
-			if (shift_endpos_output)
-				*shift_endpos_output = find_result2;
-			find_result2++;
-			find_result2 %= size;
-		}
-	}
-	return find_result;
-}
 
-//²éÕÒ²¢É¾³ıkeyÕâ¸öÖµ£¬²¢ÇÒÔÚ²éÕÒ¹ı³ÌÖĞÖ±½ÓshiftÏàÓ¦µÄÔªËØ
+//æŸ¥æ‰¾å¹¶åˆ é™¤keyè¿™ä¸ªå€¼ï¼Œå¹¶ä¸”åœ¨æŸ¥æ‰¾è¿‡ç¨‹ä¸­ç›´æ¥shiftç›¸åº”çš„å…ƒç´ 
 int __rhht_backshift_remove_on_fly(hash_table *ht,int key,int* remove_count=NULL,int remove_all=0)
 {
 	int find_result = -1;
@@ -518,7 +320,7 @@ int __rhht_backshift_remove_on_fly(hash_table *ht,int key,int* remove_count=NULL
 		{	
 			find_result = -1;
 			break;
-		}//µ±dibÍ»È»±äµÃĞ¡ÓÚÆğÊ¼µãÓ¦ÓĞµÄdibµÄÊ±ºò£¬ËµÃ÷ÒÑ¾­ÊÇÆäËûÖµµÄ²¿·ÖÁË
+		}//å½“dibçªç„¶å˜å¾—å°äºèµ·å§‹ç‚¹åº”æœ‰çš„dibçš„æ—¶å€™ï¼Œè¯´æ˜å·²ç»æ˜¯å…¶ä»–å€¼çš„éƒ¨åˆ†äº†
 		else if (dib < find_len)
 		{
 			find_result = -1;
@@ -534,27 +336,27 @@ int __rhht_backshift_remove_on_fly(hash_table *ht,int key,int* remove_count=NULL
 		find_len++;
 	}
 	//
-	//-1£º±íÊ¾²»´æÔÚ£¬ÄÇÃ´findpos_outputÊÇÓĞÒâÒåµÄ£¬shift_endpos_outputÊÇÎŞÒâÒåµÄ
+	//-1ï¼šè¡¨ç¤ºä¸å­˜åœ¨ï¼Œé‚£ä¹ˆfindpos_outputæ˜¯æœ‰æ„ä¹‰çš„ï¼Œshift_endpos_outputæ˜¯æ— æ„ä¹‰çš„
 	if(find_result != -1)
 	{
-		//ÏÈÖ±½ÓÉ¾µô£¬²»¹ÜºóÃæµÄshiftÊÇ·ñ¸²¸ÇÁËËû
+		//å…ˆç›´æ¥åˆ æ‰ï¼Œä¸ç®¡åé¢çš„shiftæ˜¯å¦è¦†ç›–äº†ä»–
 		ht->hn[find_result].hash_value = 0;
 		if (remove_count)
 			*remove_count += 1;
-		//´ÓÏÂÒ»¸ö¿ªÊ¼shift
+		//ä»ä¸‹ä¸€ä¸ªå¼€å§‹shift
 		int shift_index = (find_result+1)%size;
-		int need_shift_left_count = 1;//µ±Ç°shift_indexËùÔÚÔªËØĞèÒªÏò×óÒÆ¶¯µÄÊıÁ¿
+		int need_shift_left_count = 1;//å½“å‰shift_indexæ‰€åœ¨å…ƒç´ éœ€è¦å‘å·¦ç§»åŠ¨çš„æ•°é‡
 		while (true)
 		{
 			//empty
 			if (ht->hn[shift_index].hash_value == 0)
 				break;
-			//dib == 0,ÓĞ¿ÉÄÜfind_result¾ÍÊÇdibÎª0µÄ£¬ÒªÅĞ¶ÏºóÃæµÄ
+			//dib == 0,æœ‰å¯èƒ½find_resultå°±æ˜¯dibä¸º0çš„ï¼Œè¦åˆ¤æ–­åé¢çš„
 			int dib = (shift_index + size - ht->hn[shift_index].hash_value & 0x7FFFFFFF) % size;
 			if ( (shift_index!=find_result) &&  (dib == 0) )
 				break;
 
-			//ÏàÍ¬µÄkey£¬Èç¹ûĞèÒªÈ«²¿±»É¾µô,±ê¼ÇÎª¿Õ£¬°ÑĞèÒªÏò×óÒÆ¶¯µÄÊıÁ¿Ôö¼Ó1£¬È»ºóÅĞ¶ÏÏÂÒ»¸öÔªËØ
+			//ç›¸åŒçš„keyï¼Œå¦‚æœéœ€è¦å…¨éƒ¨è¢«åˆ æ‰,æ ‡è®°ä¸ºç©ºï¼ŒæŠŠéœ€è¦å‘å·¦ç§»åŠ¨çš„æ•°é‡å¢åŠ 1ï¼Œç„¶ååˆ¤æ–­ä¸‹ä¸€ä¸ªå…ƒç´ 
 			if (remove_all && ht->hn[shift_index].key == key)
 			{
 				ht->hn[shift_index].hash_value = 0;
@@ -580,8 +382,8 @@ int __rhht_backshift_remove_on_fly(hash_table *ht,int key,int* remove_count=NULL
 	return find_result;
 }
 
-//find ÊÇÓÃkeyÀ´²éÕÒ findpos_outputÊÇ²éÕÒ³É¹¦ºÍ²éÕÒÊ§°ÜÊ±µÄµ±Ç°Ë÷Òı¡£shift_endpos_outputÊÇbackshiftÉ¾³ıÊ±ĞèÒªÒÆ¶¯Êı¾İ¿éµÄË÷Òı¡£
-//½«À´ĞèÒªÒÆ¶¯ findpos_output ~ shift_endpos_output Ö®¼ä[findpos_output,shift_endpos_output)µÄÊı¾İ¿é,shift_endpos_outputÔòÉèÖÃÎª¿Õ
+//find æ˜¯ç”¨keyæ¥æŸ¥æ‰¾ findpos_outputæ˜¯æŸ¥æ‰¾æˆåŠŸå’ŒæŸ¥æ‰¾å¤±è´¥æ—¶çš„å½“å‰ç´¢å¼•ã€‚shift_endpos_outputæ˜¯backshiftåˆ é™¤æ—¶éœ€è¦ç§»åŠ¨æ•°æ®å—çš„ç´¢å¼•ã€‚
+//å°†æ¥éœ€è¦ç§»åŠ¨ findpos_output ~ shift_endpos_output ä¹‹é—´[findpos_output,shift_endpos_output)çš„æ•°æ®å—,shift_endpos_outputåˆ™è®¾ç½®ä¸ºç©º
 //
 int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *findpos_output=NULL,int *shift_endpos_output=NULL)
 {
@@ -590,9 +392,6 @@ int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *find
 	int hash_value = hash_function(key,size);
 	int table_pos = hash_value;
 	int find_len = 0;
-
-	
-
 	while(true)
 	{
 		int dib = (table_pos + size - hash_value & 0x7FFFFFFFU)%size;
@@ -603,7 +402,7 @@ int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *find
 				*findpos_output = table_pos;
 			find_result = -1;
 			break;
-		}//µ±dibÍ»È»±äµÃĞ¡ÓÚÆğÊ¼µãÓ¦ÓĞµÄdibµÄÊ±ºò£¬ËµÃ÷ÒÑ¾­ÊÇÆäËûÖµµÄ²¿·ÖÁË
+		}//å½“dibçªç„¶å˜å¾—å°äºèµ·å§‹ç‚¹åº”æœ‰çš„dibçš„æ—¶å€™ï¼Œè¯´æ˜å·²ç»æ˜¯å…¶ä»–å€¼çš„éƒ¨åˆ†äº†
 		else if (dib < find_len)
 		{
 			if (findpos_output)
@@ -623,50 +422,31 @@ int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *find
 		find_len++;
 	}
 
-	//±ê¼ÇÊÇ·ñÕÒµ½ÁËÒ»¸öhashÖµµÄÆğÊ¼Ë÷Òı
+	//æ ‡è®°æ˜¯å¦æ‰¾åˆ°äº†ä¸€ä¸ªhashå€¼çš„èµ·å§‹ç´¢å¼•
 	int curr_hash = 0;
 	int curr_hash_begin_index = -1;
 	int curr_hash_end_index = -1;
-	//-1£º±íÊ¾²»´æÔÚ£¬ÄÇÃ´findpos_outputÊÇÓĞÒâÒåµÄ£¬shift_endpos_outputÊÇÎŞÒâÒåµÄ
-	//²»Îª-1£º±íÊ¾´æÔÚ£¬ÒªÕÒµ½ĞèÒª±»shiftµÄ½áÎ²µÄÎ»ÖÃ findpos_outputÊÇÓĞÒâÒåµÄ£¬shift_endpos_outputÊÇÓĞÒâÒåµÄ
-	//TODO:²»ÊÇÃ¿´ÎÉ¾³ı¶¼ÒªÖ´ĞĞback_shift£¬¶øÊÇµ±dib´óÓÚÄ³¸öÖµ£¬±ÈÈç5 µÄÊ±ºò£¬²ÅĞèÒªshift£¬¿´ÄÜ·ñÊµÏÖÕâ¸ö£¿
+	//-1ï¼šè¡¨ç¤ºä¸å­˜åœ¨ï¼Œé‚£ä¹ˆfindpos_outputæ˜¯æœ‰æ„ä¹‰çš„ï¼Œshift_endpos_outputæ˜¯æ— æ„ä¹‰çš„
+	//ä¸ä¸º-1ï¼šè¡¨ç¤ºå­˜åœ¨ï¼Œè¦æ‰¾åˆ°éœ€è¦è¢«shiftçš„ç»“å°¾çš„ä½ç½® findpos_outputæ˜¯æœ‰æ„ä¹‰çš„ï¼Œshift_endpos_outputæ˜¯æœ‰æ„ä¹‰çš„
+	//TODO:ä¸æ˜¯æ¯æ¬¡åˆ é™¤éƒ½è¦æ‰§è¡Œback_shiftï¼Œè€Œæ˜¯å½“dibå¤§äºæŸä¸ªå€¼ï¼Œæ¯”å¦‚5 çš„æ—¶å€™ï¼Œæ‰éœ€è¦shiftï¼Œçœ‹èƒ½å¦å®ç°è¿™ä¸ªï¼Ÿ
 	if(find_result != -1)
 	{
-		//ĞèÒªfind_result2ÊÇĞèÒªshiftbackµÄ½áÊøµÄË÷Òı
+		//éœ€è¦find_result2æ˜¯éœ€è¦shiftbackçš„ç»“æŸçš„ç´¢å¼•
 		int shift_endpos = find_result;
 		if (shift_endpos_output)
 			*shift_endpos_output = shift_endpos;
-		
-		curr_hash = ht->hn[shift_endpos].hash_value & 0x7FFFFFFF;
-		//°ÑË÷Òı´æÆğÀ´
-		array_set(&ht->different_hash_array,ht->different_hash_array.size,shift_endpos);	
 		while (true)
 		{
 			//empty
 			if (ht->hn[shift_endpos].hash_value == 0)
 				break;
-			//dib == 0,ÓĞ¿ÉÄÜfind_result¾ÍÊÇdibÎª0µÄ£¬ÒªÅĞ¶ÏºóÃæµÄ
+			//dib == 0,æœ‰å¯èƒ½find_resultå°±æ˜¯dibä¸º0çš„ï¼Œè¦åˆ¤æ–­åé¢çš„
 			int dib = (shift_endpos + size - ht->hn[shift_endpos].hash_value & 0x7FFFFFFF) % size;
 			if ( (shift_endpos!=find_result) &&  (dib == 0) )
 				break;
 
 			if (shift_endpos_output)
 				*shift_endpos_output = shift_endpos;
-
-			//¸üĞÂÄ³¸öhashÖµµÄ½áÊøindex
-			if(curr_hash == ht->hn[shift_endpos].hash_value & 0x7FFFFFFF)
-			{	
-				//Ê¹ÓÃsize-1ÊÇÎªÁË¸üĞÂË÷Òı
-				array_set(&ht->different_hash_array,ht->different_hash_array.size-1,shift_endpos);
-			}
-			else//Ìí¼ÓÄ³¸öhashÖµµÄindex£¬ÓÃÓÚ¸üĞÂ
-			{
-				//Ê¹ÓÃsizeÊÇÎªÁËÌí¼ÓĞÂË÷Òı
-				array_set(&ht->different_hash_array,ht->different_hash_array.size,shift_endpos);
-				//¸üĞÂµ±Ç°hashÖµ
-				curr_hash = ht->hn[shift_endpos].hash_value & 0x7FFFFFFF;
-			}
-			
 
 			shift_endpos++;
 			shift_endpos %= size;
@@ -688,7 +468,75 @@ int rhht_remove_helper(hash_table *ht,int key)
 
 	return index;
 }
-//use backshift delete
+
+//find æ˜¯ç”¨keyæ¥æŸ¥æ‰¾ findpos_outputæ˜¯æŸ¥æ‰¾æˆåŠŸå’ŒæŸ¥æ‰¾å¤±è´¥æ—¶çš„å½“å‰ç´¢å¼•ã€‚shift_endpos_outputæ˜¯backshiftåˆ é™¤æ—¶éœ€è¦ç§»åŠ¨æ•°æ®å—çš„ç´¢å¼•ã€‚
+//å°†æ¥éœ€è¦ç§»åŠ¨ findpos_output ~ shift_endpos_output ä¹‹é—´[findpos_output,shift_endpos_output)çš„æ•°æ®å—,shift_endpos_outputåˆ™è®¾ç½®ä¸ºç©º
+int __rhht_find_helper_for_backshift_remove(hash_table *ht,int key,int *findpos_output=NULL,int *shift_endpos_output=NULL)
+{
+	int find_result = -1;
+	int size = ht->capacity;
+	int hash_value = hash_function(key,size);
+	int table_pos = hash_value;
+	int find_len = 0;
+
+	while(true)
+	{
+		int dib = (table_pos + size - hash_value & 0x7FFFFFFFU)%size;
+		//empty
+		if (ht->hn[table_pos].hash_value == 0)
+		{	
+			if (findpos_output)
+				*findpos_output = table_pos;
+			find_result = -1;
+			break;
+		}//å½“dibçªç„¶å˜å¾—å°äºèµ·å§‹ç‚¹åº”æœ‰çš„dibçš„æ—¶å€™ï¼Œè¯´æ˜å·²ç»æ˜¯å…¶ä»–å€¼çš„éƒ¨åˆ†äº†
+		else if (dib < find_len)
+		{
+			if (findpos_output)
+				*findpos_output = table_pos;
+			find_result = -1;
+			break;
+		}
+		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)
+		{
+			if (findpos_output)
+				*findpos_output = table_pos;
+			find_result =  table_pos;
+			break;
+		}
+		table_pos++;
+		table_pos %= size;
+		find_len++;
+	}
+
+	//-1ï¼šè¡¨ç¤ºä¸å­˜åœ¨ï¼Œé‚£ä¹ˆfindpos_outputæ˜¯æœ‰æ„ä¹‰çš„ï¼Œshift_endpos_outputæ˜¯æ— æ„ä¹‰çš„
+	//ä¸ä¸º-1ï¼šè¡¨ç¤ºå­˜åœ¨ï¼Œè¦æ‰¾åˆ°éœ€è¦è¢«shiftçš„ç»“å°¾çš„ä½ç½® findpos_outputæ˜¯æœ‰æ„ä¹‰çš„ï¼Œshift_endpos_outputæ˜¯æœ‰æ„ä¹‰çš„
+	//TODO:ä¸æ˜¯æ¯æ¬¡åˆ é™¤éƒ½è¦æ‰§è¡Œback_shiftï¼Œè€Œæ˜¯å½“dibå¤§äºæŸä¸ªå€¼ï¼Œæ¯”å¦‚5 çš„æ—¶å€™ï¼Œæ‰éœ€è¦shiftï¼Œçœ‹èƒ½å¦å®ç°è¿™ä¸ªï¼Ÿ
+	if(find_result != -1)
+	{
+		//éœ€è¦find_result2æ˜¯éœ€è¦shiftbackçš„ç»“æŸçš„ç´¢å¼•
+		int find_result2 = find_result;
+		if (shift_endpos_output)
+			*shift_endpos_output = find_result2;
+		while (true)
+		{
+			//empty
+			if (ht->hn[find_result2].hash_value == 0)
+				break;
+			//dib == 0,æœ‰å¯èƒ½find_resultå°±æ˜¯dibä¸º0çš„ï¼Œè¦åˆ¤æ–­åé¢çš„
+			int dib = (find_result2 + size - ht->hn[find_result2].hash_value & 0x7FFFFFFF) % size;
+			if ( (find_result2!=find_result) &&  (dib == 0) )
+				break;
+
+			if (shift_endpos_output)
+				*shift_endpos_output = find_result2;
+			find_result2++;
+			find_result2 %= size;
+		}
+	}
+	return find_result;
+}
+//å…ˆæ‰¾å‡ºéœ€è¦ç§»åŠ¨çš„èµ·å§‹ç´¢å¼•ï¼Œç„¶åå†ç§»åŠ¨
 int rhht_backshift_remove_helper0(hash_table *ht,int key)
 {
 	int shift_start,shift_end;
@@ -710,7 +558,7 @@ int rhht_backshift_remove_helper0(hash_table *ht,int key)
 	{
 		//printf("shifted count : %d \n",shift_count);
 	}
-	//×îºóÒ»¸ö±ê¼ÇÎª¿Õ
+	//æœ€åä¸€ä¸ªæ ‡è®°ä¸ºç©º
 	ht->hn[shift_end].hash_value = 0x00000000;//flag it as empty
 	ht->element_num--;
 
@@ -752,14 +600,12 @@ int rhht_remove_all(hash_table *ht,int key)
 int rhht_remove_all2(hash_table *ht,int key)
 {
 	int removed_num = 0;
-	//Çå¿Õ
-	array_deinit(&ht->different_hash_array);
-
+	
 	int shift_start,shift_end;
 	int pos =  __rhht_find_helper_for_backshift_remove_all(ht,key,&shift_start,&shift_end);
 	if(pos != -1)
 	{
-		//Ñ­»·ÏòÇ°ÒÆ¶¯
+		//å¾ªç¯å‘å‰ç§»åŠ¨
 	}
 	return removed_num;
 }

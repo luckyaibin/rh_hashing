@@ -21,6 +21,9 @@
     <ClInclude Include="rh_hahs_table.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="dynamic_int_array.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

@@ -153,7 +153,7 @@ start:
 		rhht_multi_insert(ht,key,value);
 		imt.insert(make_pair(key,value));
 		::Sleep(1);
-		if (GetTickCount() % 5 == 0)
+		if (GetTickCount() % 10 == -1)
 		{
 			//rhht_remove_helper(ht,key+1);
 			rhht_remove_all(ht,key+1);
@@ -277,8 +277,10 @@ int test5()
 void test6(hash_table*);
 
 void test_dynamic_array();
+
 int main()
 {	
+ 
 	test1();
 	//test_dynamic_array();
 	//hash_table * ht = create_hash_table(100);
@@ -298,6 +300,7 @@ int main()
 	return 0;
 }
 
+/*
 void test_dynamic_array()
 {
 	dynamic_int_array arr;
@@ -318,7 +321,7 @@ void test_dynamic_array()
 
 	array_deinit(&arr);
 }
-
+*/
 void test6(hash_table *ht)
 {
 	//start code...
