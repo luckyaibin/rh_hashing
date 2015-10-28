@@ -79,7 +79,7 @@ int test2()
 	start:
 	for (int i=0;i<250;i++)
 	{
-		key =  GetTickCount() % 200;
+		key =  GetTickCount() % 2000;
 		int value = key * 10;
 		rhht_unique_overwrite_insert(ht,key,value);
 		//imt.insert(make_pair(key,value));
@@ -281,7 +281,7 @@ void test_dynamic_array();
 int main()
 {	
  
-	test1();
+	test2();
 	//test_dynamic_array();
 	//hash_table * ht = create_hash_table(100);
 	//test6(ht);

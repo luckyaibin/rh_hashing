@@ -22,72 +22,45 @@ struct hash_table
 {
 	int capacity;		//hashtable的bucket大小
 	int treshold;		//阈值大小，是根据load_factor_percent * capacity计算出来的
-	int element_num;//有效元素大小
-	float load_factor_percent;
+	int element_num;	//有效元素大小
+	float load_factor_percent;//负载因子：当element_num/capacity大于它是，需要增加内存了
 	hash_node *hn;
 };
 int __rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos=-1);
-hash_node* create_hash_node()
-{
-	hash_node* hn = new hash_node;
-	return hn;
-}
 
+//创建一个hashtable
+//initial_size 初始的capacity大小，默认为256
+//load_factor_percent,负载因子，默认0.9
 hash_table* create_hash_table(unsigned int initial_size = 256,float load_factor_percent=0.9f )
 {
 	hash_table *ht= (hash_table*)malloc(sizeof(hash_table));
 	ht->capacity = initial_size;
 	ht->load_factor_percent = load_factor_percent;
 	ht->treshold = int(ht->capacity * ht->load_factor_percent);
-	//至少有一个空位
-	if (ht->capacity - ht->treshold < 1)
+	//至少要有2个空白，保证插入之后还留有一个空白的位置，否则如果load_factor_percent很接近1.0f,那么hashtable塞满了同一个值，__rhht_find_helper将死循环
+	if (ht->capacity - ht->treshold < 2)
 	{
-		ht->treshold = ht->capacity - 1;
+		ht->treshold = ht->capacity - 2;
 	}
-
 	ht->hn = (hash_node *)malloc(sizeof(hash_node) * initial_size);
 	ht->element_num = 0;
 	memset(ht->hn,0,sizeof(hash_node)*initial_size);
 	return ht;
 }
 
-//把 [start,end] 向左移动count个格子（覆盖start - count ~ start 之前的值
-//[end - count，end]之间的清空
-int __shift(hash_table* ht,int start_index,int end_index,int shift_count)
-{
-	int size = ht->capacity;
-	shift_count = shift_count % size;
-	if (shift_count<=0)
-	{
-		return -1;
-	}
-	int data_count = ( end_index + size - start_index + 1)%size;
-	for (int i=0;i<shift_count;i++)
-	{
-		//把最后的移动到起始元素之前，相当于shift了1
-		int to_index = (start_index + size - i - 1)%size;
-		int from_index = (end_index + size - i)%size;
-
-		ht->hn[to_index] = ht->hn[from_index];
-		ht->hn[from_index].hash_value = 0;
-	}
-
-	return 0;
-}
-
-int get_hash(hash_table* ht,int index)
+int __get_hash(hash_table* ht,int index)
 {
 	int hash_value = ht->hn[index].hash_value & 0x7FFFFFFF;
 	return hash_value;
 }
 
-int get_dib(hash_table* ht,int index)
+int __get_dib(hash_table* ht,int index)
 {
 	int dib = (index + ht->capacity + ht->hn[index].hash_value & 0x7FFFFFFF  ) % ht->capacity;
 	return dib;
 }
 
-//增加大小到原来的factor倍，默认为2
+//检查当前元素数量，是否达到了阈值，达到了则增加大小到原来的factor倍，默认为1.5
 int __rhht_check_increase_to(hash_table *ht,float increase_factor = 1.50f)
 {
 	//没达到极限大小
@@ -107,10 +80,10 @@ int __rhht_check_increase_to(hash_table *ht,float increase_factor = 1.50f)
 	ht->capacity = new_capacity;
 	ht->treshold = int(ht->capacity * ht->load_factor_percent);
 	printf("increased from %d to %d \n",old_capacity,new_capacity);
-	//至少有一个空位，保证至少能够成功在插入，操作之后才可以增加capacity
-	if (ht->capacity - ht->treshold < 1)
+	//至少要有2个空白，保证插入之后还留有一个空白的位置，否则如果load_factor_percent很接近1.0f,那么hashtable塞满了同一个值，__rhht_find_helper将死循环
+	if (ht->capacity - ht->treshold < 2)
 	{
-		ht->treshold = ht->capacity - 1;
+		ht->treshold = ht->capacity - 2;
 	}
 	//拷贝原来的值
 	for (int i=0;i<old_capacity;i++)
@@ -128,15 +101,10 @@ inline int hash_function(int v,int hash_size)
 {
 	v = v + (v << 5);
 	v = v % hash_size;
-	v |= v==0;//不返回hash值0
+	v |= v==0;//绝对不能不返回hash值0
 	return v;
 }
-//inline int hash_function(int v,int hash_size)
-//{
-//	v = v % hash_size;
-//	v |= v==0;//不返回hash值0
-//	return v;
-//}
+
 void dump_hash_table(hash_table * ht)
 {
 	static int g_dump_serial=0;
@@ -157,7 +125,10 @@ void dump_hash_table(hash_table * ht)
 	printf("\n\n");
 }
 
-//start_table_pos起始查找索引
+//向hashtable中插入一个值，不管里面是否已经存在这个值
+//start_table_pos_instinct是函数开始查找索引的，用来加快查找速度
+//（start_table_pos_instinct在rhht_unique_insert和rhht_unique_overrite_insert中使用，这两个函数会给start_table_pos_instinct赋值，
+//也就是key的哈希值在哈希表中的真实位置，从而不用再从key对应的hashvalue的位置开始位置遍历到真实位置)
 int __rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_instinct)
 {
 	int is_increased = __rhht_check_increase_to(ht);
@@ -185,7 +156,6 @@ int __rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_in
 			return table_pos;
 		}
 		//注意！！！下面两处之所以要table_pos + size - table_hash ，加上size，是为了保证当回环到起始点的时候计算得到的值仍然是正确的，否则可能出现负值
-		//有元素
 		//table_pos永远是大于等于table_hash的！因为所有元素都是向后错位排列的
 		int table_dib = (table_pos + size - table_hash & 0x7FFFFFFFU)%size;
 
@@ -193,9 +163,10 @@ int __rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_in
 		//table_pos 小于inserted_hash_value
 		int inserted_dib = (table_pos  + size - (inserted_hash_value & 0x7FFFFFFFU) )%size;
 		//swap，相当于把新元素new_node插入到当前table_pos的位置，相当于交换new_node和table_pos上的old_node，然后把old_node向后挪动
+		//这样old_node离它的初始位置就变远了1个位置，相当于new_node抢夺了old_node的“好位置”，也就是robinhood hashing名字的由来
 		if(table_dib < inserted_dib)
 		{
-			//deleted,不能放在上面
+			//deleted
 			if (table_hash & 0x80000000)
 			{
 				ht->hn[table_pos].key = key;
@@ -223,7 +194,8 @@ int __rhht_insert_helper(hash_table *ht,int key,int value,int start_table_pos_in
 }
 
 
-//find 是用key来查找
+//find 是用key来查找 hashtable是否存在key，如果存在则返回这个key所在的位置，不存在返回-1
+//insertpos_output是key对应有相同hashvalue的第一个位置，不能直接用key的位置加快插入，因为不同的key可能有相同的hashvalue
 int __rhht_find_helper(hash_table *ht,int key,int *insertpos_output=NULL)
 {
 	int size = ht->capacity;
@@ -259,12 +231,13 @@ int __rhht_find_helper(hash_table *ht,int key,int *insertpos_output=NULL)
 	}
 }
 
+//可以插入重复的key值
 int rhht_multi_insert(hash_table *ht,int key,int value)
 {
 	return __rhht_insert_helper(ht,key,value);
 }
 
-//同一个值只存在一个,且不覆盖之前的值
+//同一个值只存在一个,如果之前存在这个值不进行插入而是直接返回，不会覆盖之前的值
 int rhht_unique_insert(hash_table *ht,int key,int value)
 {
 	int endpos = -1;
@@ -277,7 +250,7 @@ int rhht_unique_insert(hash_table *ht,int key,int value)
 	return index;
 }
 
-//同一个值只存在一个,且覆盖之前存在的值
+//同一个值只存在一个,如果不存在直接插入，如果已经存在，则覆盖之前存在的值
 int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 {
 	int endpos = -1;
@@ -296,11 +269,9 @@ int rhht_unique_overwrite_insert(hash_table *ht,int key,int value)
 	return index;
 }
 
-
-
-
-
 //查找并删除key这个值，并且在查找过程中直接shift相应的元素
+//remove_count返回删除的数量，
+//remove_all 为0：不删除所有相同的值。不为0：要删除所有相同的值
 int __rhht_backshift_remove_on_fly(hash_table *ht,int key,int* remove_count=NULL,int remove_all=0)
 {
 	int find_result = -1;
@@ -336,7 +307,7 @@ int __rhht_backshift_remove_on_fly(hash_table *ht,int key,int* remove_count=NULL
 		find_len++;
 	}
 	//
-	//-1：表示不存在，那么findpos_output是有意义的，shift_endpos_output是无意义的
+	//-1：表示不存在
 	if(find_result != -1)
 	{
 		//先直接删掉，不管后面的shift是否覆盖了他
@@ -364,7 +335,7 @@ int __rhht_backshift_remove_on_fly(hash_table *ht,int key,int* remove_count=NULL
 				if (remove_count)
 					*remove_count += 1;
 			}
-			else
+			else//向左移动
 			{
 				//do the shift
 				need_shift_left_count = min( dib,need_shift_left_count);
@@ -384,7 +355,6 @@ int __rhht_backshift_remove_on_fly(hash_table *ht,int key,int* remove_count=NULL
 
 //find 是用key来查找 findpos_output是查找成功和查找失败时的当前索引。shift_endpos_output是backshift删除时需要移动数据块的索引。
 //将来需要移动 findpos_output ~ shift_endpos_output 之间[findpos_output,shift_endpos_output)的数据块,shift_endpos_output则设置为空
-//
 int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *findpos_output=NULL,int *shift_endpos_output=NULL)
 {
 	int find_result = -1;
@@ -455,7 +425,7 @@ int __rhht_find_helper_for_backshift_remove_all(hash_table *ht,int key,int *find
 	return find_result;
 }
 
-//use backshift delete
+//没有使用backshift delete
 int rhht_remove_helper(hash_table *ht,int key)
 {
 	int shift_start,shift_end;
