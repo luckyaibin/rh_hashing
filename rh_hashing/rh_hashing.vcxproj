@@ -74,6 +74,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="dynamic_int_array.h" />
     <ClInclude Include="rhhashing.h" />
     <ClInclude Include="rh_hahs_table.hpp" />
   </ItemGroup>

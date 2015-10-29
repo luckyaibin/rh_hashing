@@ -7,7 +7,7 @@ using namespace  std;
 typedef multimap<int,int> IntMultimapType;
 typedef hash_map<int,int> IntHashMapType;
 
-//this is master branch
+
 int g_serial_id =0;
 
 //测试map的插入删除操作的时间效率
@@ -36,9 +36,9 @@ start:
 			int key = arry[i];
 			int value = key * 10;			 
 			rhht_unique_overwrite_insert(ht,key,value);
-			if (key % 5 == 0)
+			if (key % 2 == 0)
 			{
-				rhht_remove_one(ht,key);
+				rhht_remove_one_bs(ht,key);
 			}		
 		}
 	printf(" ht size:	%d\n ",ht->element_num);
@@ -52,7 +52,7 @@ start:
 			int key = arry[i];
 			int value = key * 10;
 			imt.insert(make_pair(key,value));
-			if (key % 5 == 0)
+			if (key % 2 == 0)
 			{
 				imt.erase(key);
 			}		
@@ -69,25 +69,38 @@ start:
 //测试map插入删除的正确性
 int test2()
 {
-	hash_table * ht = create_hash_table(1024);
+	hash_table * ht_before_insert=NULL;
+	hash_table * ht_before_remove=NULL;
+	hash_table * ht_after_remove=NULL;
+	hash_table * ht = create_hash_table(100);
 	IntHashMapType imt;
-
+	int key = 0;
+	printf("//start code...\n");
 	start:
 	for (int i=0;i<250;i++)
 	{
-		int key =  GetTickCount() % 1000;
+		key =  GetTickCount() % 2000;
 		int value = key * 10;
-		//rhht_unique_overwrite_insert(ht,key,value);
+		rhht_unique_overwrite_insert(ht,key,value);
 		//imt.insert(make_pair(key,value));
-
-		rhht_unique_insert(ht,key,value);
-		imt.insert(make_pair(key,value));
-		::Sleep(1);
-		if (GetTickCount() % 5 == 0)
+		//duplicate(ht,&ht_before_insert);
+		//rhht_unique_insert(ht,key,value);
+		//duplicate(ht,&ht_before_remove);
+		//printf("rhht_unique_insert(ht,%d,%d) \n",key,value);
+		//imt.insert(make_pair(key,value));
+		imt[key] = value;
+		//::Sleep(1);
+		int cnt = GetTickCount();
+		if (cnt % 3 == 0)
 		{
-			rhht_remove_helper(ht,key+1);
+			//printf("rhht_remove_one2(ht,%d) \n ",key+1);
+				
+			rhht_remove_one_bs(ht,key+1);
+			//duplicate(ht,&ht_after_remove);
+			
 			imt.erase(key+1);
 		}		
+	
 	}
 
 	printf("my rh size is : %d,map size is :%d\n",ht->element_num,imt.size());
@@ -101,7 +114,12 @@ int test2()
 			IntHashMapType::iterator it = imt.find(key);
 			if (it == imt.end())
 			{
-				printf("error occurred.%d,%d\n",key,value);
+				//dump_hash_table(ht_before_insert);
+				//dump_hash_table(ht_before_remove);
+				//dump_hash_table(ht_after_remove);
+
+				dump_hash_table(ht);
+				printf("error occurred.%d,%d,hash_value:%d,index:%d,总大小:%d\n",key,value,ht->hn[i].hash_value,i,ht->capacity);
 			}
 			else
 			{
@@ -110,8 +128,6 @@ int test2()
 					printf("value not equal...%d,%d\n",key,value);
 				}
 			}
-
-
 		}
 	}
 
@@ -137,7 +153,7 @@ start:
 		rhht_multi_insert(ht,key,value);
 		imt.insert(make_pair(key,value));
 		::Sleep(1);
-		if (GetTickCount() % 5 == 0)
+		if (GetTickCount() % 10 == -1)
 		{
 			//rhht_remove_helper(ht,key+1);
 			rhht_remove_all(ht,key+1);
@@ -174,20 +190,182 @@ start:
 	return 0;
 }
 
-int main()
+//测试backshift deleteion的正确性
+int test4()
 {
-	test1();
-	IntMultimapType imt;
+	int g_serial = 1000;
+
+
+	int arr[5] = {0};
+	for (int i=0;i<5;i++)
+	{
+		arr[i] = rand() % 10;
+	}
+
+	hash_table * ht = create_hash_table(7);
+	IntHashMapType imt;
+	int loop_count = 0;
+start:
+	//插入列表里的某个随机值
+	int index = rand() % 5;
+	int insert_v = arr[index];
+
+	printf("111111 inserted key%d ,loop_count:%d \n",insert_v,++loop_count);
+	if (loop_count == 17)
+		printf("");
+	rhht_unique_insert(ht,insert_v,++g_serial);
+	imt.insert(make_pair(insert_v,g_serial));
+	dump_hash_table(ht);
+	//删除列表里的某个随机值
+	index = rand() % 5;
+	int remove_v = arr[index];
+	if (loop_count == 17)
+	{
+		//dump_hash_table(ht);
+		printf("");
+	}
+	if (loop_count == 77)
+	{
+		dump_hash_table(ht);
+	}
+	printf("222222 removed key%d ,loop_count:%d \n",remove_v,loop_count);
+	rhht_remove_one_bs(ht,remove_v);
+	imt.erase(remove_v);
+	dump_hash_table(ht);
+	if (loop_count == 17)
+	{
+		//dump_hash_table(ht);
+		printf("");
+	}
+	if (loop_count == 77)
+	{
+		dump_hash_table(ht);
+	}
+	//测试结果是否正确
+	for (int i=0;i<ht->capacity;i++)
+	{
+		if (ht->hn[i].hash_value > 0)
+		{
+			int key = ht->hn[i].key;
+			int value = ht->hn[i].value;
+			IntHashMapType::iterator it = imt.find(key);
+			if (it == imt.end())
+			{
+				dump_hash_table(ht);
+				printf("error occurred.%d,%d,hash_value:%d,index:%d,total size:%d\n",key,value,ht->hn[i].hash_value,i,ht->capacity);
+			}
+			else
+			{
+				if (it->second!=value)
+				{
+					printf("value not equal...%d,%d\n",key,value);
+				}
+			}
+		}
+	}
+	goto start;
+	//dump_hash_table(ht);
+	return 0;
+}
+
+
+//测试map的插入删除操作的时间效率
+int test5()
+{	
+	int arry[25000] = {0};//{1,57,20,81,59,48,36,90,83,75,18,86,72,52,31,2,10,37,15,17,99,45,12,1,1,38,54,58,61,61,17,67,46,36,6,61,79,81,52,31,88,73,96,93,54,15,47,24,87,21,78,85,100,100,62,40,27,30,85,3,38,10,68,6,1,92,28,28,59,70,84,73,49,21,75,47,46,95,75,11,60,39,74,61,58,37,16,23,43,81,52,99,76,35,17,66,50,7,70,51};
+	for ( int i=0;i<25000-1;i++)
+	{
+		arry[i] = rand();
+	}
+	int hash_table_size = 10;
+	hash_table * ht = create_hash_table();
+	hash_table * ht_slow = create_hash_table();
+
+start:
+	unsigned long curr_t = GetTickCount();
+	for(int times  = 0;times<10;times++)
+		for (int i=0;i<25000;i++)
+		{
+			int key = arry[i];
+			int value = key * 10;			 
+			rhht_unique_insert(ht,key,value);
+			if (key % 2 == 0)
+			{
+				rhht_remove_all_bs(ht,key);
+			}		
+		}
+		//printf(" ht size:	%d\n ",ht->element_num);
+		printf("my hash table elipsed time is %d \n",GetTickCount() - curr_t);
+		//dump_hash_table(ht);
+
+		curr_t = GetTickCount();
+		for(int times  = 0;times<10;times++)
+			for (int i=0;i<25000;i++)
+			{
+				int key = arry[i];
+				int value = key * 10;			 
+				rhht_unique_insert(ht_slow,key,value);
+				if (key % 2 == 0)
+				{
+					rhht_remove_all_bs_slow(ht_slow,key);
+				}		
+			}
+
+			//printf("ht_slow size:	%d\n ",ht_slow->element_num);
+			printf("ht_slow	elipsed time is %d \n",GetTickCount() - curr_t);
+
+			goto start;
+
+			return 0;
+}
+
+
+ 
+void test6(hash_table*);
+
+void test_dynamic_array();
+
+int main()
+{	
+ 
+	test5();
+	//test_dynamic_array();
+	//hash_table * ht = create_hash_table(100);
+	//test6(ht);
+	IntHashMapType imt;
 	imt.insert(make_pair(10,20));
 	imt.insert(make_pair(100,200));
 	imt.insert(make_pair(100,2000));
 	imt.insert(make_pair(3,300));
 
-	imt.erase(100);
-	for(IntMultimapType::iterator it = imt.begin();it!=imt.end();it++)
+	//imt.erase(100);
+	for(IntHashMapType::iterator it = imt.begin();it!=imt.end();it++)
 	{
 		printf("[%d,%d] \n",it->first,it->second);
 	}
 
 	return 0;
 }
+
+/*
+void test_dynamic_array()
+{
+	dynamic_int_array arr;
+	array_init(&arr);
+
+	for (int i=0;i<100;i++)
+	{
+		array_set(&arr,i,i*10);
+		//dump_array(&arr);
+	}
+	dump_array(&arr);
+	for (int i=0;i<100;i++)
+	{
+		array_remove(&arr,5,NULL);
+		dump_array(&arr);
+	}
+	dump_array(&arr);
+
+	array_deinit(&arr);
+}
+*/
