@@ -1,10 +1,12 @@
-﻿#ifndef __ROBIN_HASHING_H__
+﻿#if 0
+
+#ifndef __ROBIN_HASHING_H__
 #define __ROBIN_HASHING_H__
 #include <memory.h>
 #include <stdio.h>
 #include <malloc.h>
 
-#if 1
+
 
 #ifndef min
 #define min(a,b) ((a)<=(b)?a:b)
