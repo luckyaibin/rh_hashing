@@ -10,10 +10,11 @@
 #define min(a,b) ((a)<=(b)?a:b)
 #endif
 
-#define HT_declare_new_hashtable_type(hashfunction_name,key_type,value_type)											\
-	typedef int (*hashfunction_type_##key_type##value_type)(key_type,int) ;												\
-	hashfunction_type_##key_type##value_type  hashfunction_##key_type##value_type= hashfunction_name;					\
-	\
+#define HT_declare_new_hashtable_type(hashfunction_name,comparefunction_name,key_type,value_type)											\
+	typedef int(*hashfunction_type_##key_type##value_type)(key_type, unsigned int);												\
+	typedef int(*comparefunction_type_##key_type##key_type)(key_type, key_type);										\
+	hashfunction_type_##key_type##value_type  hashfunction_##key_type##value_type = hashfunction_name;					\
+	comparefunction_type_##key_type##key_type comparefunction_##key_type##value_type = comparefunction_name;			\
 	inline int hash_function_wrapper_##key_type##value_type(key_type v,int hash_size)									\
 {																		\
 	int hash_value = hashfunction_##key_type##value_type(v,hash_size);	\
@@ -196,7 +197,7 @@ struct hash_table##key_type##value_type	\
 		\
 		if (insertpos_output && (*insertpos_output == -1) )\
 		*insertpos_output = table_pos;\
-		if (ht->hn[table_pos].key == key)\
+if (comparefunction_##key_type##value_type(ht->hn[table_pos].key, key))\
 			{\
 			return table_pos;\
 			}\
@@ -250,7 +251,6 @@ struct hash_table##key_type##value_type	\
 	\
 	int __rhht_remove_one_helper_##key_type##value_type(hash_table##key_type##value_type *ht,key_type key)\
 {\
-	int shift_start,shift_end;\
 	int index = __rhht_find_helper_##key_type##value_type(ht,key);\
 	if (index == -1)\
 	return -1;\
@@ -292,7 +292,7 @@ struct hash_table##key_type##value_type	\
 		find_result = -1;\
 		break;\
 		}\
-		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)\
+		else if (ht->hn[table_pos].hash_value == hash_value && (comparefunction_##key_type##value_type(ht->hn[table_pos].key , key)))\
 		{\
 		if (findpos_output)\
 		*findpos_output = table_pos;\
@@ -386,7 +386,7 @@ struct hash_table##key_type##value_type	\
 		find_result = -1;\
 		break;\
 		}\
-		else if (ht->hn[table_pos].hash_value == hash_value && ht->hn[table_pos].key == key)\
+		else if (ht->hn[table_pos].hash_value == hash_value && comparefunction_##key_type##value_type(ht->hn[table_pos].key,key))\
 		{\
 		find_result =  table_pos;\
 		break;\
@@ -417,7 +417,7 @@ struct hash_table##key_type##value_type	\
 		break;\
 		\
 		\
-		if (remove_all && ht->hn[shift_index].key == key)\
+if (remove_all && comparefunction_##key_type##value_type(ht->hn[shift_index].key,key))\
 			{\
 			ht->hn[shift_index].hash_value = 0;\
 			need_shift_left_count++;\
